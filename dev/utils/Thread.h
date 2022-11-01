@@ -20,7 +20,7 @@
 #if !defined(THREAD_H)
 #define THREAD_H
 
-#include "type_define.h" /* Needed for mutex_type */
+#include "TypeDefine.h" /* Needed for mutex_type */
 #include <pthread.h>
 #include <semaphore.h>
 

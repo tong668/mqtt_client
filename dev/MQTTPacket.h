@@ -22,9 +22,6 @@
 #define MQTTPACKET_H
 
 #include "Socket.h"
-#if defined(OPENSSL)
-#include "SSLSocket.h"
-#endif
 #include "LinkedList.h"
 #include "Clients.h"
 
@@ -50,11 +47,9 @@ enum msgTypes
 	PINGREQ, PINGRESP, DISCONNECT, AUTH
 };
 
-#if defined(__linux__)
 #include <endian.h>
 #if __BYTE_ORDER == __BIG_ENDIAN
 	#define REVERSED 1
-#endif
 #endif
 
 /**

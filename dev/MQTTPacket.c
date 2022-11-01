@@ -106,7 +106,6 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	void* pack = NULL;
 	size_t actual_len = 0;
 
-	FUNC_ENTRY;
 	*error = SOCKET_ERROR;  /* indicate whether an error occurred, or not */
 
 	const size_t headerWsFramePos = WebSocket_framePos();
@@ -170,7 +169,6 @@ exit:
 	if (*error == TCPSOCKET_INTERRUPTED)
 		WebSocket_framePosSeekTo(headerWsFramePos);
 
-	FUNC_EXIT_RC(*error);
 	return pack;
 }
 
@@ -192,7 +190,6 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	char *buf;
 	PacketBuffers packetbufs;
 
-	FUNC_ENTRY;
 	buf0len = 1 + MQTTPacket_encode(NULL, buflen);
 	buf = malloc(buf0len);
 	if (buf == NULL)
@@ -227,7 +224,6 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	  free(buf);
 
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -249,8 +245,6 @@ int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, in
 	int i, rc = SOCKET_ERROR;
 	size_t buf0len, total = 0;
 	char *buf;
-
-	FUNC_ENTRY;
 	for (i = 0; i < bufs->count; i++)
 		total += bufs->buflens[i];
 	buf0len = 1 + MQTTPacket_encode(NULL, total);
@@ -280,7 +274,6 @@ int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, in
 	if (rc != TCPSOCKET_INTERRUPTED)
 	  free(buf);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -294,8 +287,6 @@ exit:
 int MQTTPacket_encode(char* buf, size_t length)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	do
 	{
 		char d = length % 128;
@@ -308,7 +299,6 @@ int MQTTPacket_encode(char* buf, size_t length)
 		else
 			rc++;
 	} while (length > 0);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -326,8 +316,6 @@ int MQTTPacket_decode(networkHandles* net, size_t* value)
 	int multiplier = 1;
 	int len = 0;
 #define MAX_NO_OF_REMAINING_LENGTH_BYTES 4
-
-	FUNC_ENTRY;
 	*value = 0;
 	do
 	{
@@ -343,7 +331,6 @@ int MQTTPacket_decode(networkHandles* net, size_t* value)
 		multiplier *= 128;
 	} while ((c & 128) != 0);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -377,8 +364,6 @@ int readInt(char** pptr)
 static char* readUTFlen(char** pptr, char* enddata, int* len)
 {
 	char* string = NULL;
-
-	FUNC_ENTRY;
 	if (enddata - (*pptr) > 1) /* enough length to read the integer? */
 	{
 		*len = readInt(pptr);
@@ -392,7 +377,6 @@ static char* readUTFlen(char** pptr, char* enddata, int* len)
 		}
 	}
 exit:
-	FUNC_EXIT;
 	return string;
 }
 
@@ -506,8 +490,6 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 {
 	Header header;
 	int rc = 0;
-
-	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = DISCONNECT;
 
@@ -534,7 +516,6 @@ int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQT
 		rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
 exit:
 	Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -552,8 +533,6 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 	Publish* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
-
-	FUNC_ENTRY;
 	if ((pack = malloc(sizeof(Publish))) == NULL)
 		goto exit;
 	memset(pack, '\0', sizeof(Publish));
@@ -594,7 +573,6 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 	pack->payload = curdata;
 	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
-	FUNC_EXIT;
 	return pack;
 }
 
@@ -605,13 +583,11 @@ exit:
  */
 void MQTTPacket_freePublish(Publish* pack)
 {
-	FUNC_ENTRY;
 	if (pack->topic != NULL)
 		free(pack->topic);
 	if (pack->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pack->properties);
 	free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -621,11 +597,9 @@ void MQTTPacket_freePublish(Publish* pack)
  */
 void MQTTPacket_freeAck(Ack* pack)
 {
-	FUNC_ENTRY;
 	if (pack->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pack->properties);
 	free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -644,8 +618,6 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
 	int rc = SOCKET_ERROR;
 	char *buf = NULL;
 	char *ptr = NULL;
-
-	FUNC_ENTRY;
 	if ((ptr = buf = malloc(2)) == NULL)
 		goto exit;
 	header.byte = 0;
@@ -657,7 +629,6 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
 	if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
 		free(buf);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -674,10 +645,8 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
 {
 	int rc = 0;
 
-	FUNC_ENTRY;
 	rc =  MQTTPacket_send_ack(MQTTVersion, PUBACK, msgid, 0, net);
 	Log(LOG_PROTOCOL, 12, NULL, net->socket, clientID, msgid, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -688,13 +657,11 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
  */
 void MQTTPacket_freeSuback(Suback* pack)
 {
-	FUNC_ENTRY;
 	if (pack->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
 	free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -704,7 +671,6 @@ void MQTTPacket_freeSuback(Suback* pack)
  */
 void MQTTPacket_freeUnsuback(Unsuback* pack)
 {
-	FUNC_ENTRY;
 	if (pack->MQTTVersion >= MQTTVERSION_5)
 	{
 		MQTTProperties_free(&pack->properties);
@@ -712,7 +678,6 @@ void MQTTPacket_freeUnsuback(Unsuback* pack)
 			ListFree(pack->reasonCodes);
 	}
 	free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -727,11 +692,8 @@ void MQTTPacket_freeUnsuback(Unsuback* pack)
 int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	rc =  MQTTPacket_send_ack(MQTTVersion, PUBREC, msgid, 0, net);
 	Log(LOG_PROTOCOL, 13, NULL, net->socket, clientID, msgid, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -748,11 +710,8 @@ int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, cons
 int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	rc = MQTTPacket_send_ack(MQTTVersion, PUBREL, msgid, dup, net);
 	Log(LOG_PROTOCOL, 16, NULL, net->socket, clientID, msgid, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -768,11 +727,8 @@ int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* 
 int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	rc = MQTTPacket_send_ack(MQTTVersion, PUBCOMP, msgid, 0, net);
 	Log(LOG_PROTOCOL, 18, NULL, net->socket, clientID, msgid, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -791,7 +747,6 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 	char* curdata = data;
 	char* enddata = &data[datalen];
 
-	FUNC_ENTRY;
 	if ((pack = malloc(sizeof(Ack))) == NULL)
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
@@ -831,7 +786,6 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		}
 	}
 exit:
-	FUNC_EXIT;
 	return pack;
 }
 
@@ -851,8 +805,6 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 	Header header;
 	char *topiclen;
 	int rc = SOCKET_ERROR;
-
-	FUNC_ENTRY;
 	topiclen = malloc(2);
 	if (topiclen == NULL)
 		goto exit;
@@ -907,7 +859,6 @@ exit_free:
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(topiclen);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -918,16 +869,10 @@ exit:
  */
 void MQTTPacket_free_packet(MQTTPacket* pack)
 {
-	FUNC_ENTRY;
 	if (pack->header.bits.type == PUBLISH)
 		MQTTPacket_freePublish((Publish*)pack);
-	/*else if (pack->header.type == SUBSCRIBE)
-		MQTTPacket_freeSubscribe((Subscribe*)pack, 1);
-	else if (pack->header.type == UNSUBSCRIBE)
-		MQTTPacket_freeUnsubscribe((Unsubscribe*)pack);*/
 	else
 		free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -991,16 +936,6 @@ int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata)
 	return len;
 }
 
-/*
-if (prop->value.integer4 >= 0 && prop->value.integer4 <= 127)
-  len = 1;
-else if (prop->value.integer4 >= 128 && prop->value.integer4 <= 16383)
-  len = 2;
-else if (prop->value.integer4 >= 16384 && prop->value.integer4 < 2097151)
-  len = 3;
-else if (prop->value.integer4 >= 2097152 && prop->value.integer4 < 268435455)
-  len = 4;
-*/
 int MQTTPacket_VBIlen(int rem_len)
 {
 	int rc = 0;

@@ -17,7 +17,7 @@
 #if !defined(MQTTREASONCODES_H)
 #define MQTTREASONCODES_H
 
-#include "utils/type_define.h"
+#include "utils/TypeDefine.h"
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {

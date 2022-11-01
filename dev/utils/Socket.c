@@ -37,6 +37,7 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#include "Thread.h"
 
 #if defined(USE_SELECT)
 int isReady(int socket, fd_set* read_set, fd_set* write_set);

@@ -47,8 +47,6 @@ int MQTTPacket_send_connect(Clients* client, int MQTTVersion,
 	char *buf, *ptr;
 	Connect packet;
 	int rc = SOCKET_ERROR, len;
-
-	FUNC_ENTRY;
 	packet.header.byte = 0;
 	packet.header.bits.type = CONNECT;
 
@@ -122,7 +120,6 @@ exit:
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(buf);
 exit_nofree:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -140,8 +137,6 @@ void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, siz
 	Connack* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
-
-	FUNC_ENTRY;
 	if ((pack = malloc(sizeof(Connack))) == NULL)
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
@@ -169,7 +164,6 @@ void* MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char* data, siz
 		}
 	}
 exit:
-	FUNC_EXIT;
 	return pack;
 }
 
@@ -180,11 +174,9 @@ exit:
  */
 void MQTTPacket_freeConnack(Connack* pack)
 {
-	FUNC_ENTRY;
 	if (pack->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pack->properties);
 	free(pack);
-	FUNC_EXIT;
 }
 
 
@@ -198,13 +190,10 @@ int MQTTPacket_send_pingreq(networkHandles* net, const char* clientID)
 {
 	Header header;
 	int rc = 0;
-
-	FUNC_ENTRY;
 	header.byte = 0;
 	header.bits.type = PINGREQ;
 	rc = MQTTPacket_send(net, header, NULL, 0, 0, MQTTVERSION_3_1_1);
 	Log(LOG_PROTOCOL, 20, NULL, net->socket, clientID, rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -227,8 +216,6 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 	int rc = -1;
 	ListElement *elem = NULL, *qosElem = NULL;
 	int datalen, i = 0;
-
-	FUNC_ENTRY;
 	header.bits.type = SUBSCRIBE;
 	header.bits.dup = dup;
 	header.bits.qos = 1;
@@ -270,7 +257,6 @@ int MQTTPacket_send_subscribe(List* topics, List* qoss, MQTTSubscribe_options* o
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -288,8 +274,6 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 	Suback* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
-
-	FUNC_ENTRY;
 	if ((pack = malloc(sizeof(Suback))) == NULL)
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
@@ -341,7 +325,6 @@ void* MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char* data, size
 		pack = NULL;
 	}
 exit:
-	FUNC_EXIT;
 	return pack;
 }
 
@@ -362,8 +345,6 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 	int rc = SOCKET_ERROR;
 	ListElement *elem = NULL;
 	int datalen;
-
-	FUNC_ENTRY;
 	header.bits.type = UNSUBSCRIBE;
 	header.bits.dup = dup;
 	header.bits.qos = 1;
@@ -391,7 +372,6 @@ int MQTTPacket_send_unsubscribe(List* topics, MQTTProperties* props, int msgid, 
 	if (rc != TCPSOCKET_INTERRUPTED)
 		free(data);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -409,8 +389,6 @@ void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, si
 	Unsuback* pack = NULL;
 	char* curdata = data;
 	char* enddata = &data[datalen];
-
-	FUNC_ENTRY;
 	if ((pack = malloc(sizeof(Unsuback))) == NULL)
 		goto exit;
 	pack->MQTTVersion = MQTTVersion;
@@ -464,6 +442,5 @@ void* MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char* data, si
 		}
 	}
 exit:
-	FUNC_EXIT;
 	return pack;
 }

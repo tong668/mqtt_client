@@ -30,12 +30,6 @@
 #include "MQTTPersistenceDefault.h"
 #include "MQTTProtocolClient.h"
 
-
-#if defined(_WIN32) || defined(_WIN64)
-	#define snprintf _snprintf
-#endif
-
-
 static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, size_t buflen, int MQTTVersion);
 static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry* qEntry, size_t size);
 
@@ -51,8 +45,6 @@ int MQTTPersistence_create(MQTTClient_persistence** persistence, int type, void*
 {
 	int rc = 0;
 	MQTTClient_persistence* per = NULL;
-
-	FUNC_ENTRY;
 #if !defined(NO_PERSISTENCE)
 	switch (type)
 	{
@@ -100,7 +92,6 @@ int MQTTPersistence_create(MQTTClient_persistence** persistence, int type, void*
 
 	*persistence = per;
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -114,16 +105,12 @@ exit:
 int MQTTPersistence_initialize(Clients *c, const char *serverURI)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	if ( c->persistence != NULL )
 	{
 		rc = c->persistence->popen(&(c->phandle), c->clientID, serverURI, c->persistence->context);
 		if ( rc == 0 )
 			rc = MQTTPersistence_restorePackets(c);
 	}
-
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -136,8 +123,6 @@ int MQTTPersistence_initialize(Clients *c, const char *serverURI)
 int MQTTPersistence_close(Clients *c)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 #if !defined(NO_PERSISTENCE)
 	if (c->persistence != NULL)
 	{
@@ -153,7 +138,6 @@ int MQTTPersistence_close(Clients *c)
 		c->persistence = NULL;
 	}
 #endif
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -165,12 +149,9 @@ int MQTTPersistence_close(Clients *c)
 int MQTTPersistence_clear(Clients *c)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	if (c->persistence != NULL)
 		rc = c->persistence->pclear(c->phandle);
 
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -190,8 +171,6 @@ int MQTTPersistence_restorePackets(Clients *c)
 	int i = 0;
 	int msgs_sent = 0;
 	int msgs_rcvd = 0;
-
-	FUNC_ENTRY;
 	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
 	{
 		while (rc == 0 && i < nkeys)
@@ -349,7 +328,6 @@ int MQTTPersistence_restorePackets(Clients *c)
 		msgs_sent, msgs_rcvd, c->clientID);
 	MQTTPersistence_wrapMsgID(c);
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -367,8 +345,6 @@ void* MQTTPersistence_restorePacket(int MQTTVersion, char* buffer, size_t buflen
 	char c;
 	int multiplier = 1;
 	extern pf new_packets[];
-
-	FUNC_ENTRY;
 	header.byte = buffer[0];
 	/* decode the message length according to the MQTT algorithm */
 	do
@@ -385,8 +361,6 @@ void* MQTTPersistence_restorePacket(int MQTTVersion, char* buffer, size_t buflen
 		if (ptype >= CONNECT && ptype <= DISCONNECT && new_packets[ptype] != NULL)
 			pack = (*new_packets[ptype])(MQTTVersion, header.byte, ++buffer, remaining_length);
 	}
-
-	FUNC_EXIT;
 	return pack;
 }
 
@@ -401,8 +375,6 @@ void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;
-
-	FUNC_ENTRY;
 	while(ListNextElement(list, &current) != NULL && index == NULL)
 	{
 		if ( ((Messages*)content)->msgid < ((Messages*)current->content)->msgid )
@@ -410,7 +382,6 @@ void MQTTPersistence_insertInOrder(List* list, void* content, size_t size)
 	}
 
 	ListInsert(list, content, size, index);
-	FUNC_EXIT;
 }
 
 
@@ -440,8 +411,6 @@ int MQTTPersistence_putPacket(SOCKET socket, char* buf0, size_t buf0len, int cou
 	char** bufs = NULL;
 	char *key;
 	Clients* client = NULL;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &socket, clientSocketCompare)->content);
 	if (client->persistence != NULL)
 	{
@@ -515,7 +484,6 @@ int MQTTPersistence_putPacket(SOCKET socket, char* buf0, size_t buf0len, int cou
 	}
 
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -532,8 +500,6 @@ exit:
 int MQTTPersistence_remove(Clients* c, char *type, int qos, int msgId)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	if (c->persistence != NULL)
 	{
 		const size_t keysize = PERSISTENCE_MAX_KEY_LENGTH + 1;
@@ -591,7 +557,6 @@ int MQTTPersistence_remove(Clients* c, char *type, int qos, int msgId)
 	}
 
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -605,8 +570,6 @@ void MQTTPersistence_wrapMsgID(Clients *client)
 {
 	ListElement* wrapel = NULL;
 	ListElement* current = NULL;
-
-	FUNC_ENTRY;
 	if ( client->outboundMsgs->count > 0 )
 	{
 		int firstMsgID = ((Messages*)client->outboundMsgs->first->content)->msgid;
@@ -637,7 +600,6 @@ void MQTTPersistence_wrapMsgID(Clients *client)
 		client->outboundMsgs->first->prev = NULL;
 		client->outboundMsgs->last->next = NULL;
 	}
-	FUNC_EXIT;
 }
 
 
@@ -652,8 +614,6 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 #endif
 	char key[KEYSIZE];
 	int chars = 0;
-	
-	FUNC_ENTRY;
 	if (client->MQTTVersion >= MQTTVERSION_5)
 		chars = snprintf(key, KEYSIZE, "%s%u", PERSISTENCE_V5_QUEUE_KEY, qe->seqno);
 	else
@@ -665,7 +625,6 @@ int MQTTPersistence_unpersistQueueEntry(Clients* client, MQTTPersistence_qEntry*
 	}
 	else if ((rc = client->persistence->premove(client->phandle, key)) != 0)
 		Log(LOG_ERROR, 0, "Error %d removing qEntry from persistence", rc);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -683,8 +642,6 @@ int MQTTPersistence_persistQueueEntry(Clients* aclient, MQTTPersistence_qEntry* 
 	int lens[MAX_NO_OF_BUFFERS];
 	void* bufs[MAX_NO_OF_BUFFERS];
 	int props_allocated = 0;
-		
-	FUNC_ENTRY;
 	bufs[bufindex] = &qe->msg->payloadlen;
 	lens[bufindex++] = sizeof(qe->msg->payloadlen);
 				
@@ -764,8 +721,6 @@ static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, s
 	MQTTPersistence_qEntry* qe = NULL;
 	char* ptr = buffer;
 	int data_size;
-	
-	FUNC_ENTRY;
 	if ((qe = malloc(sizeof(MQTTPersistence_qEntry))) == NULL)
 		goto exit;
 	memset(qe, '\0', sizeof(MQTTPersistence_qEntry));
@@ -826,7 +781,6 @@ static MQTTPersistence_qEntry* MQTTPersistence_restoreQueueEntry(char* buffer, s
 			Log(LOG_ERROR, -1, "Error restoring properties from persistence");
 
 exit:
-	FUNC_EXIT;
 	return qe;
 }
 
@@ -835,15 +789,12 @@ static void MQTTPersistence_insertInSeqOrder(List* list, MQTTPersistence_qEntry*
 {
 	ListElement* index = NULL;
 	ListElement* current = NULL;
-
-	FUNC_ENTRY;
 	while (ListNextElement(list, &current) != NULL && index == NULL)
 	{
 		if (qEntry->seqno < ((MQTTPersistence_qEntry*)current->content)->seqno)
 			index = current;
 	}
 	ListInsert(list, qEntry, size, index);
-	FUNC_EXIT;
 }
 
 
@@ -859,8 +810,6 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 	int nkeys;
 	int i = 0;
 	int entries_restored = 0;
-
-	FUNC_ENTRY;
 	if (c->persistence && (rc = c->persistence->pkeys(c->phandle, &msgkeys, &nkeys)) == 0)
 	{
 		while (rc == 0 && i < nkeys)
@@ -901,7 +850,6 @@ int MQTTPersistence_restoreMessageQueue(Clients* c)
 			free(msgkeys);
 	}
 	Log(TRACE_MINIMUM, -1, "%d queued messages restored for client %s", entries_restored, c->clientID);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 #endif

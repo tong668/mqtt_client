@@ -116,7 +116,7 @@
 /// @endcond
 */
 
-#include "utils/type_define.h"
+#include "utils/TypeDefine.h"
 #include "MQTTProperties.h"
 #include "MQTTReasonCodes.h"
 #include "MQTTSubscribeOpts.h"

@@ -44,7 +44,7 @@
 #define ULONG size_t
 #define SOCKET int
 
-#include "type_define.h" /* Needed for mutex_type */
+#include "TypeDefine.h" /* Needed for mutex_type */
 
 /** socket operation completed successfully */
 #define TCPSOCKET_COMPLETE 0

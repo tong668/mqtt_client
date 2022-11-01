@@ -85,8 +85,6 @@ int MQTTProtocol_assignMsgId(Clients* client)
 {
 	int start_msgid = client->msgID;
 	int msgid = start_msgid;
-
-	FUNC_ENTRY;
 	msgid = (msgid == MAX_MSG_ID) ? 1 : msgid + 1;
 	while (ListFindItem(client->outboundMsgs, &msgid, messageIDCompare) != NULL)
 	{
@@ -99,7 +97,6 @@ int MQTTProtocol_assignMsgId(Clients* client)
 	}
 	if (msgid != 0)
 		client->msgID = msgid;
-	FUNC_EXIT_RC(msgid);
 	return msgid;
 }
 
@@ -109,7 +106,6 @@ static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 	int len;
 	pending_write* pw = NULL;
 
-	FUNC_ENTRY;
 	/* store the publication until the write is finished */
 	if ((pw = malloc(sizeof(pending_write))) == NULL)
 		goto exit;
@@ -132,7 +128,7 @@ static void MQTTProtocol_storeQoS0(Clients* pubclient, Publish* publish)
 		Log(LOG_SEVERE, 0, "Error updating write");
 	publish->payload = publish->topic = NULL;
 exit:
-	FUNC_EXIT;
+    return;
 }
 
 
@@ -147,12 +143,9 @@ exit:
 static int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish, int qos, int retained)
 {
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	rc = MQTTPacket_send_publish(publish, 0, qos, retained, &pubclient->net, pubclient->clientID);
 	if (qos == 0 && rc == TCPSOCKET_INTERRUPTED)
 		MQTTProtocol_storeQoS0(pubclient, publish);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -170,8 +163,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 {
 	Publish qos12pub = *publish;
 	int rc = 0;
-
-	FUNC_ENTRY;
 	if (qos > 0)
 	{
 		*mm = MQTTProtocol_createMessage(publish, mm, qos, retained, 0);
@@ -187,7 +178,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	rc = MQTTProtocol_startPublishCommon(pubclient, publish, qos, retained);
 	if (qos > 0)
 		memcpy((*mm)->publish->mask, publish->mask, sizeof((*mm)->publish->mask));
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -204,8 +194,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained, int allocatePayload)
 {
 	Messages* m = malloc(sizeof(Messages));
-
-	FUNC_ENTRY;
 	if (!m)
 		goto exit;
 	m->len = sizeof(Messages);
@@ -246,7 +234,6 @@ Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, i
 	if (qos == 2)
 		m->nextMessageType = PUBREC;
 exit:
-	FUNC_EXIT;
 	return m;
 }
 
@@ -260,8 +247,6 @@ exit:
 Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 {
 	Publications* p = malloc(sizeof(Publications));
-
-	FUNC_ENTRY;
 	if (!p)
 		goto exit;
 	p->refcount = 1;
@@ -292,7 +277,6 @@ exit:
  */
 void MQTTProtocol_removePublication(Publications* p)
 {
-	FUNC_ENTRY;
 	if (p && --(p->refcount) == 0)
 	{
 		free(p->payload);
@@ -301,7 +285,6 @@ void MQTTProtocol_removePublication(Publications* p)
 		p->topic = NULL;
 		ListRemove(&(state.publications), p);
 	}
-	FUNC_EXIT;
 }
 
 /**
@@ -319,8 +302,6 @@ int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 	char* clientid = NULL;
 	int rc = TCPSOCKET_COMPLETE;
 	int socketHasPendingWrites = 0;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	clientid = client->clientID;
 	Log(LOG_PROTOCOL, 11, NULL, sock, clientid, publish->msgId, publish->header.bits.qos,
@@ -415,7 +396,6 @@ int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 	}
 exit:
 	MQTTPacket_freePublish(publish);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -430,8 +410,6 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 	Puback* puback = (Puback*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 14, NULL, sock, client->clientID, puback->msgId);
 
@@ -460,7 +438,6 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 	if (puback->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&puback->properties);
 	free(pack);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -478,7 +455,6 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 	int rc = TCPSOCKET_COMPLETE;
 	int send_pubrel = 1; /* boolean to send PUBREL or not */
 
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 15, NULL, sock, client->clientID, pubrec->msgId);
 
@@ -537,7 +513,6 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 	if (pubrec->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pubrec->properties);
 	free(pack);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -553,8 +528,6 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 	Pubrel* pubrel = (Pubrel*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 17, NULL, sock, client->clientID, pubrel->msgId);
 
@@ -614,7 +587,6 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 	if (pubrel->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pubrel->properties);
 	free(pack);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -630,8 +602,6 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 	Pubcomp* pubcomp = (Pubcomp*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 19, NULL, sock, client->clientID, pubcomp->msgId);
 
@@ -671,7 +641,6 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 	if (pubcomp->MQTTVersion >= MQTTVERSION_5)
 		MQTTProperties_free(&pubcomp->properties);
 	free(pack);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -684,7 +653,6 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 {
 	ListElement* current = NULL;
 
-	FUNC_ENTRY;
 	ListNextElement(bstate->clients, &current);
 	while (current)
 	{
@@ -736,7 +704,6 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 			}
 		}
 	}
-	FUNC_EXIT;
 }
 
 
@@ -749,9 +716,6 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
-
-	FUNC_ENTRY;
-
 	if (!regardless && client->retryInterval <= 0 && /* 0 or -ive retryInterval turns off retry except on reconnect */
 			client->connect_sent == client->connect_count)
 		goto exit;
@@ -817,7 +781,7 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
 		}
 	}
 exit:
-	FUNC_EXIT;
+    return;
 }
 
 
@@ -833,8 +797,6 @@ int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId)
 {
 	int rc = 0;
 	AckRequest* ackReq = NULL;
-
-	FUNC_ENTRY;
 	ackReq = malloc(sizeof(AckRequest));
 	if (!ackReq)
 		rc = PAHO_MEMORY_ERROR;
@@ -844,8 +806,6 @@ int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId)
 		ackReq->ackType = ackType;
 		ListAppend(client->outboundQueue, ackReq, sizeof(AckRequest));
 	}
-
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -860,7 +820,6 @@ void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 {
 	ListElement* current = NULL;
 
-	FUNC_ENTRY;
 	ListNextElement(bstate->clients, &current);
 	/* look through the outbound message list of each client, checking to see if a retry is necessary */
 	while (current)
@@ -879,7 +838,6 @@ void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 		if (doRetry)
 			MQTTProtocol_retries(now, client, regardless);
 	}
-	FUNC_EXIT;
 }
 
 
@@ -889,7 +847,6 @@ void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
  */
 void MQTTProtocol_freeClient(Clients* client)
 {
-	FUNC_ENTRY;
 	/* free up pending message lists here, and any other allocated data */
 	MQTTProtocol_freeMessageList(client->outboundMsgs);
 	MQTTProtocol_freeMessageList(client->inboundMsgs);
@@ -914,32 +871,7 @@ void MQTTProtocol_freeClient(Clients* client)
 		free(client->httpsProxy);
 	if (client->net.http_proxy_auth)
 		free(client->net.http_proxy_auth);
-#if defined(OPENSSL)
-	if (client->net.https_proxy_auth)
-		free(client->net.https_proxy_auth);
-	if (client->sslopts)
-	{
-		if (client->sslopts->trustStore)
-			free((void*)client->sslopts->trustStore);
-		if (client->sslopts->keyStore)
-			free((void*)client->sslopts->keyStore);
-		if (client->sslopts->privateKey)
-			free((void*)client->sslopts->privateKey);
-		if (client->sslopts->privateKeyPassword)
-			free((void*)client->sslopts->privateKeyPassword);
-		if (client->sslopts->enabledCipherSuites)
-			free((void*)client->sslopts->enabledCipherSuites);
-		if (client->sslopts->struct_version >= 2)
-		{
-			if (client->sslopts->CApath)
-				free((void*)client->sslopts->CApath);
-		}
-		free(client->sslopts);
-                client->sslopts = NULL;
-	}
-#endif
 	/* don't free the client structure itself... this is done elsewhere */
-	FUNC_EXIT;
 }
 
 
@@ -951,7 +883,6 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 {
 	ListElement* current = NULL;
 
-	FUNC_ENTRY;
 	while (ListNextElement(msgList, &current))
 	{
 		Messages* m = (Messages*)(current->content);
@@ -960,7 +891,6 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 			MQTTProperties_free(&m->properties);
 	}
 	ListEmpty(msgList);
-	FUNC_EXIT;
 }
 
 
@@ -970,10 +900,8 @@ void MQTTProtocol_emptyMessageList(List* msgList)
  */
 void MQTTProtocol_freeMessageList(List* msgList)
 {
-	FUNC_ENTRY;
 	MQTTProtocol_emptyMessageList(msgList);
 	ListFree(msgList);
-	FUNC_EXIT;
 }
 
 
@@ -988,8 +916,6 @@ void MQTTProtocol_writeAvailable(SOCKET socket)
 	Clients* client = NULL;
 	ListElement* current = NULL;
 	int rc = 0;
-
-	FUNC_ENTRY;
 
 	client = (Clients*)(ListFindItem(bstate->clients, &socket, clientSocketCompare)->content);
 
@@ -1019,7 +945,6 @@ void MQTTProtocol_writeAvailable(SOCKET socket)
 	}
 
 	ListEmpty(client->outboundQueue);
-	FUNC_EXIT_RC(rc);
 }
 
 /**
@@ -1034,8 +959,6 @@ char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 {
   size_t count = dest_size;
   char *temp = dest;
-
-  FUNC_ENTRY;
   if (dest_size < strlen(src))
     Log(TRACE_MIN, -1, "the src string is truncated");
 
@@ -1044,8 +967,6 @@ char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
     count--;
 
   *temp = '\0';
-
-  FUNC_EXIT;
   return dest;
 }
 

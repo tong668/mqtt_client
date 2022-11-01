@@ -300,7 +300,6 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
   int rc = 0;
   unsigned int remlength = 0;
 
-  FUNC_ENTRY;
   /* we assume an initialized properties structure */
   if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
@@ -395,8 +394,6 @@ const char* MQTTPropertyName(enum MQTTPropertyCodes value)
 void MQTTProperties_free(MQTTProperties* props)
 {
   int i = 0;
-
-  FUNC_ENTRY;
   if (props == NULL)
     goto exit;
   for (i = 0; i < props->count; ++i)
@@ -419,7 +416,7 @@ void MQTTProperties_free(MQTTProperties* props)
     free(props->array);
   memset(props, '\0', sizeof(MQTTProperties)); /* zero all fields */
 exit:
-  FUNC_EXIT;
+    return;
 }
 
 
@@ -427,8 +424,6 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 {
   int i = 0;
   MQTTProperties result = MQTTProperties_initializer;
-
-  FUNC_ENTRY;
   for (i = 0; i < props->count; ++i)
   {
 	int rc = 0;
@@ -436,8 +431,6 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 	if ((rc = MQTTProperties_add(&result, &props->array[i])) != 0)
 		Log(LOG_ERROR, -1, "Error from MQTTProperties add %d", rc);
   }
-
-  FUNC_EXIT;
   return result;
 }
 

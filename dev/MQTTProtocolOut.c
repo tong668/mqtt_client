@@ -57,8 +57,6 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 	char* colon_pos;
 	size_t len;
 	char* topic_pos;
-
-	FUNC_ENTRY;
 	colon_pos = strrchr(uri, ':'); /* reverse find to allow for ':' in IPv6 addresses */
 
 	if (uri[0] == '[')
@@ -96,7 +94,6 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 		/* we are stripping off the final ], so length is 1 shorter */
 		--len;
 	}
-	FUNC_EXIT;
 	return len;
 }
 
@@ -199,30 +196,16 @@ exit:
  * @param long timeout how long to wait for a new socket to be created
  * @return return code
  */
-#if defined(OPENSSL)
-#if defined(__GNUC__) && defined(__linux__)
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
-		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
-#else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int ssl, int websocket, int MQTTVersion,
-		MQTTProperties* connectProperties, MQTTProperties* willProperties)
-#endif
-#else
-#if defined(__GNUC__) && defined(__linux__)
+
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
-#else
-int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
-		MQTTProperties* connectProperties, MQTTProperties* willProperties)
-#endif
-#endif
+
 {
 	int rc = 0,
 		port;
 	size_t addr_len;
 	char* p0;
 
-	FUNC_ENTRY;
 	aClient->good = 1;
 
 	if (aClient->httpProxy)
@@ -239,101 +222,35 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 			Log(TRACE_PROTOCOL, -1, "Setting http proxy auth to %s", aClient->net.http_proxy_auth);
 	}
 
-#if defined(OPENSSL)
-	if (aClient->httpsProxy)
-		p0 = aClient->httpsProxy;
-	else
-		p0 = getenv("https_proxy");
-
-	if (p0)
-	{
-		if ((rc = MQTTProtocol_setHTTPProxy(aClient, p0, &aClient->net.https_proxy, &aClient->net.https_proxy_auth, "https://")) != 0)
-			goto exit;
-		Log(TRACE_PROTOCOL, -1, "Setting https proxy to %s", aClient->net.https_proxy);
-		if (aClient->net.https_proxy_auth)
-			Log(TRACE_PROTOCOL, -1, "Setting https proxy auth to %s", aClient->net.https_proxy_auth);
-	}
-
-	if (!ssl && aClient->net.http_proxy) {
-#else
 	if (aClient->net.http_proxy) {
-#endif
+
 		addr_len = MQTTProtocol_addressPort(aClient->net.http_proxy, &port, NULL, PROXY_DEFAULT_PORT);
-#if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
 		else
 			rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket), timeout);
-#else
-		rc = Socket_new(aClient->net.http_proxy, addr_len, port, &(aClient->net.socket));
-#endif
+
 	}
-#if defined(OPENSSL)
-	else if (ssl && aClient->net.https_proxy) {
-		addr_len = MQTTProtocol_addressPort(aClient->net.https_proxy, &port, NULL, PROXY_DEFAULT_PORT);
-#if defined(__GNUC__) && defined(__linux__)
-		if (timeout < 0)
-			rc = -1;
-		else
-			rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket), timeout);
-#else
-		rc = Socket_new(aClient->net.https_proxy, addr_len, port, &(aClient->net.socket));
-#endif
-	}
-#endif
+
 	else {
-#if defined(OPENSSL)
-		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, ssl ?
-				(websocket ? WSS_DEFAULT_PORT : SECURE_MQTT_DEFAULT_PORT) :
-				(websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT) );
-#else
 		addr_len = MQTTProtocol_addressPort(ip_address, &port, NULL, websocket ? WS_DEFAULT_PORT : MQTT_DEFAULT_PORT);
-#endif
-#if defined(__GNUC__) && defined(__linux__)
 		if (timeout < 0)
 			rc = -1;
 		else
 			rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket), timeout);
-#else
-		rc = Socket_new(ip_address, addr_len, port, &(aClient->net.socket));
-#endif
+
 	}
 	if (rc == EINPROGRESS || rc == EWOULDBLOCK)
 		aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
 	else if (rc == 0)
 	{	/* TCP connect completed. If SSL, send SSL connect */
-#if defined(OPENSSL)
-		if (ssl)
-		{
-			if (aClient->net.https_proxy) {
-				aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
-				rc = Proxy_connect( &aClient->net, 1, ip_address);
-			}
-			if (rc == 0 && SSLSocket_setSocketForSSL(&aClient->net, aClient->sslopts, ip_address, addr_len) == 1)
-			{
-				rc = aClient->sslopts->struct_version >= 3 ?
-					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
-						aClient->sslopts->verify, aClient->sslopts->ssl_error_cb, aClient->sslopts->ssl_error_context) :
-					SSLSocket_connect(aClient->net.ssl, aClient->net.socket, ip_address,
-						aClient->sslopts->verify, NULL, NULL);
-				if (rc == TCPSOCKET_INTERRUPTED)
-					aClient->connect_state = SSL_IN_PROGRESS; /* SSL connect called - wait for completion */
-			}
-			else
-				rc = SOCKET_ERROR;
-		}
-		else if (aClient->net.http_proxy) {
-#else
+
 		if (aClient->net.http_proxy) {
-#endif
 			aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
 			rc = Proxy_connect( &aClient->net, 0, ip_address);
 		}
 		if ( websocket )
 		{
-#if defined(OPENSSL)
-			rc = WebSocket_connect(&aClient->net, ssl, ip_address);
-#endif
 			rc = WebSocket_connect(&aClient->net, 0, ip_address);
 			if ( rc == TCPSOCKET_INTERRUPTED )
 				aClient->connect_state = WEBSOCKET_IN_PROGRESS; /* Websocket connect called - wait for completion */
@@ -349,7 +266,6 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 	}
 
 exit:
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -365,11 +281,9 @@ int MQTTProtocol_handlePingresps(void* pack, SOCKET sock)
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
 
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 21, NULL, sock, client->clientID);
 	client->ping_outstanding = 0;
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -387,10 +301,7 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -407,11 +318,9 @@ int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
 
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 23, NULL, sock, client->clientID, suback->msgId);
 	MQTTPacket_freeSuback(suback);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -425,10 +334,7 @@ int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props)
 {
 	int rc = 0;
-
-	FUNC_ENTRY;
 	rc = MQTTPacket_send_unsubscribe(topics, props, msgID, 0, client);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -444,12 +350,9 @@ int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
 	Unsuback* unsuback = (Unsuback*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
 	MQTTPacket_freeUnsuback(unsuback);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
@@ -465,12 +368,9 @@ int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock)
 	Ack* disconnect = (Ack*)pack;
 	Clients* client = NULL;
 	int rc = TCPSOCKET_COMPLETE;
-
-	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 30, NULL, sock, client->clientID, disconnect->rc);
 	MQTTPacket_freeAck(disconnect);
-	FUNC_EXIT_RC(rc);
 	return rc;
 }
 
