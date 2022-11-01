@@ -17,7 +17,7 @@
 #if !defined(MQTTPROPERTIES_H)
 #define MQTTPROPERTIES_H
 
-#include "utils/MQTTExportDeclarations.h"
+#include "utils/type_define.h"
 
 #define MQTT_INVALID_PROPERTY_ID -2
 
