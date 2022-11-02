@@ -8,9 +8,7 @@
 #include "Messages.h"
 #include "MQTTProtocolClient.h"
 
-
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
-
 
 int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
                          MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);

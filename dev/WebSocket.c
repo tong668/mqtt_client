@@ -15,8 +15,6 @@
 #  include <endian.h>
 #include "Socket.h"
 
-
-
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>

@@ -9,8 +9,6 @@
 #include "Messages.h"
 #include "MQTTProperties.h"
 
-
-
 int MQTTProtocol_startPublish(Clients *pubclient, Publish *publish, int qos, int retained, Messages **m);
 
 Messages *MQTTProtocol_createMessage(Publish *publish, Messages **mm, int qos, int retained, int allocatePayload);
