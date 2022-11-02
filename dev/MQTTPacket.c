@@ -20,29 +20,6 @@
 #endif
 
 /**
- * List of the predefined MQTT v3/v5 packet names.
- */
-//static const char *packet_names[] =
-//{
-//	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
-//	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
-//	"PINGREQ", "PINGRESP", "DISCONNECT", "AUTH"
-//};
-
-//const char** MQTTClient_packet_names = packet_names;
-
-
-/**
- * Converts an MQTT packet code into its name
- * @param ptype packet code
- * @return the corresponding string, or "UNKNOWN"
- */
-//const char* MQTTPacket_name(int ptype)
-//{
-//	return (ptype >= 0 && ptype <= AUTH) ? packet_names[ptype] : "UNKNOWN";
-//}
-
-/**
  * Array of functions to build packets, indexed according to packet code
  */
 pf new_packets[] =
@@ -318,23 +295,6 @@ static char* readUTFlen(char** pptr, char* enddata, int* len)
 exit:
 	return string;
 }
-
-
-/**
- * Reads a "UTF" string from the input buffer.  UTF as in the MQTT v3 spec which really means
- * a length delimited string.  So it reads the two byte length then the data according to
- * that length.  The end of the buffer is provided too, so we can prevent buffer overruns caused
- * by an incorrect length.
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @param enddata pointer to the end of the buffer not to be read beyond
- * @return an allocated C string holding the characters read, or NULL if the length read would
- * have caused an overrun.
- */
-//char* readUTF(char** pptr, char* enddata)
-//{
-//	int len;
-//	return readUTFlen(pptr, enddata, &len);
-//}
 
 
 /**
@@ -877,12 +837,6 @@ int MQTTPacket_VBIlen(int rem_len)
 }
 
 
-/**
- * Decodes the message length according to the MQTT algorithm
- * @param getcharfn pointer to function to read the next character from the data source
- * @param value the decoded length returned
- * @return the number of bytes read from the socket
- */
 int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), unsigned int* value)
 {
 	char c;

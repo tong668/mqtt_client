@@ -8,7 +8,6 @@
 #include "Clients.h"
 
 #define MAX_MSG_ID 65535
-#define MAX_CLIENTID_LEN 65535
 
 typedef struct
 {

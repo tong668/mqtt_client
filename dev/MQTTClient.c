@@ -1094,17 +1094,6 @@ int MQTTClient_disconnect(MQTTClient handle, int timeout) {
     return rc;
 }
 
-int MQTTClient_isConnected(MQTTClient handle) {
-    MQTTClients *m = handle;
-    int rc = 0;
-    Thread_lock_mutex(mqttclient_mutex);
-    if (m && m->c)
-        rc = m->c->connected;
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-
 MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
                                        int *qos, MQTTSubscribe_options *opts, MQTTProperties *props) {
     MQTTClients *m = handle;
@@ -1459,20 +1448,6 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int p
     return resp;
 }
 
-
-int MQTTClient_publish(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
-                       int qos, int retained, MQTTClient_deliveryToken *deliveryToken) {
-    MQTTClients *m = handle;
-    MQTTResponse rc = MQTTResponse_initializer;
-
-    if (m->c->MQTTVersion >= MQTTVERSION_5)
-        rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
-    else
-        rc = MQTTClient_publish5(handle, topicName, payloadlen, payload, qos, retained, NULL, deliveryToken);
-    return rc.reasonCode;
-}
-
-
 MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
                                         MQTTClient_deliveryToken *deliveryToken) {
     MQTTResponse rc = MQTTResponse_initializer;
@@ -1672,55 +1647,6 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
     return pack;
 }
 
-
-int MQTTClient_receive(MQTTClient handle, char **topicName, int *topicLen, MQTTClient_message **message,
-                       unsigned long timeout) {
-    int rc = TCPSOCKET_COMPLETE;
-    START_TIME_TYPE start = MQTTTime_start_clock();
-    ELAPSED_TIME_TYPE elapsed = 0L;
-    MQTTClients *m = handle;
-    if (m == NULL || m->c == NULL
-        || running) /* receive is not meant to be called in a multi-thread environment */
-    {
-        rc = MQTTCLIENT_FAILURE;
-        goto exit;
-    }
-    if (m->c->connected == 0) {
-        rc = MQTTCLIENT_DISCONNECTED;
-        goto exit;
-    }
-
-    *topicName = NULL;
-    *message = NULL;
-
-    /* if there is already a message waiting, don't hang around but still do some packet handling */
-    if (m->c->messageQueue->count > 0)
-        timeout = 0L;
-
-    elapsed = MQTTTime_elapsed(start);
-    do {
-        SOCKET sock = 0;
-        MQTTClient_cycle(&sock, (timeout > elapsed) ? timeout - elapsed : 0L, &rc);
-
-        if (rc == SOCKET_ERROR) {
-            if (ListFindItem(handles, &sock, clientSockCompare) &&    /* find client corresponding to socket */
-                (MQTTClient) (handles->current->content) == handle)
-                break; /* there was an error on the socket we are interested in */
-        }
-        elapsed = MQTTTime_elapsed(start);
-    } while (elapsed < timeout && m->c->messageQueue->count == 0);
-
-    if (m->c->messageQueue->count > 0)
-        rc = MQTTClient_deliverMessage(rc, m, topicName, topicLen, message);
-
-    if (rc == SOCKET_ERROR)
-        MQTTClient_disconnect_internal(handle, 0);
-
-    exit:
-    return rc;
-}
-
-
 void MQTTClient_yield(void) {
     START_TIME_TYPE start = MQTTTime_start_clock();
     ELAPSED_TIME_TYPE elapsed = 0L;
@@ -1777,39 +1703,6 @@ int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt
         MQTTClient_yield();
         Thread_lock_mutex(mqttclient_mutex);
         elapsed = MQTTTime_elapsed(start);
-    }
-
-    exit:
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-
-int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens) {
-    int rc = MQTTCLIENT_SUCCESS;
-    MQTTClients *m = handle;
-    *tokens = NULL;
-    Thread_lock_mutex(mqttclient_mutex);
-
-    if (m == NULL) {
-        rc = MQTTCLIENT_FAILURE;
-        goto exit;
-    }
-
-    if (m->c && m->c->outboundMsgs->count > 0) {
-        ListElement *current = NULL;
-        int count = 0;
-
-        *tokens = malloc(sizeof(MQTTClient_deliveryToken) * (m->c->outboundMsgs->count + 1));
-        if (!*tokens) {
-            rc = PAHO_MEMORY_ERROR;
-            goto exit;
-        }
-        while (ListNextElement(m->c->outboundMsgs, &current)) {
-            Messages *m = (Messages *) (current->content);
-            (*tokens)[count++] = m->msgid;
-        }
-        (*tokens)[count] = -1;
     }
 
     exit:

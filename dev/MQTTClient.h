@@ -135,7 +135,6 @@ typedef struct
 	} payload;
 } MQTTClient_willOptions;
 
-#define MQTTClient_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, {0, NULL} }
 
 typedef struct
 {
@@ -212,9 +211,6 @@ typedef struct MQTTResponse
 
 LIBMQTT_API int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
-LIBMQTT_API int MQTTClient_isConnected(MQTTClient handle);
-
-
 LIBMQTT_API int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
 LIBMQTT_API MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char* topic, int qos,
@@ -229,9 +225,6 @@ LIBMQTT_API MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char* 
 
 LIBMQTT_API MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char* const* topic, MQTTProperties* props);
 
-LIBMQTT_API int MQTTClient_publish(MQTTClient handle, const char* topicName, int payloadlen, const void* payload, int qos, int retained,
-		MQTTClient_deliveryToken* dt);
-
 LIBMQTT_API MQTTResponse MQTTClient_publish5(MQTTClient handle, const char* topicName, int payloadlen, const void* payload,
 		int qos, int retained, MQTTProperties* properties, MQTTClient_deliveryToken* dt);
 LIBMQTT_API int MQTTClient_publishMessage(MQTTClient handle, const char* topicName, MQTTClient_message* msg, MQTTClient_deliveryToken* dt);
@@ -243,14 +236,7 @@ LIBMQTT_API MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const cha
 LIBMQTT_API int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
 
 
-
-LIBMQTT_API int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryToken **tokens);
-
 LIBMQTT_API void MQTTClient_yield(void);
-
-
-LIBMQTT_API int MQTTClient_receive(MQTTClient handle, char** topicName, int* topicLen, MQTTClient_message** message,
-		unsigned long timeout);
 
 
 LIBMQTT_API void MQTTClient_freeMessage(MQTTClient_message** msg);
