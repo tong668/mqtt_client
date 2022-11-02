@@ -74,15 +74,6 @@
 #include "WebSocket.h"
 #include "Proxy.h"
 
-const char *client_timestamp_eye = "MQTTClientV3_Timestamp " BUILD_TIMESTAMP;
-const char *client_version_eye = "MQTTClientV3_Version " CLIENT_VERSION;
-
-int MQTTClient_init(void);
-
-void MQTTClient_global_init(MQTTClient_init_options *inits) {
-    MQTTClient_init();
-}
-
 static ClientStates ClientState =
         {
                 CLIENT_VERSION, /* version */
@@ -107,28 +98,6 @@ static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
 
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
-
-int MQTTClient_init(void)
-{
-    pthread_mutexattr_t attr;
-    int rc;
-
-    pthread_mutexattr_init(&attr);
-    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-
-    if ((rc = pthread_mutex_init(mqttclient_mutex, &attr)) != 0)
-        printf("MQTTClient: error %d initializing client_mutex\n", rc);
-    else if ((rc = pthread_mutex_init(socket_mutex, &attr)) != 0)
-        printf("MQTTClient: error %d initializing socket_mutex\n", rc);
-    else if ((rc = pthread_mutex_init(subscribe_mutex, &attr)) != 0)
-        printf("MQTTClient: error %d initializing subscribe_mutex\n", rc);
-    else if ((rc = pthread_mutex_init(unsubscribe_mutex, &attr)) != 0)
-        printf("MQTTClient: error %d initializing unsubscribe_mutex\n", rc);
-    else if ((rc = pthread_mutex_init(connect_mutex, &attr)) != 0)
-        printf("MQTTClient: error %d initializing connect_mutex\n", rc);
-
-    return rc;
-}
 
 #define WINAPI
 
@@ -228,7 +197,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
                                  int persistence_type, void *persistence_context, MQTTClient_createOptions *options) {
     int rc = 0;
     MQTTClients *m = NULL;
-    FUNC_ENTRY;
     if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
         goto exit;
 
@@ -417,17 +385,6 @@ void MQTTClient_free(void *memory) {
     free(memory);
 }
 
-
-void MQTTResponse_free(MQTTResponse response) {
-    if (response.reasonCodeCount > 0 && response.reasonCodes)
-        free(response.reasonCodes);
-    if (response.properties) {
-        MQTTProperties_free(response.properties);
-        free(response.properties);
-    }
-}
-
-
 static int
 MQTTClient_deliverMessage(int rc, MQTTClients *m, char **topicName, int *topicLen, MQTTClient_message **message) {
     qEntry *qe = (qEntry *) (m->c->messageQueue->first->content);
@@ -470,24 +427,6 @@ static thread_return_type WINAPI connectionLost_call(void *context) {
     return 0;
 }
 
-
-int MQTTClient_setDisconnected(MQTTClient handle, void *context, MQTTClient_disconnected *disconnected) {
-    int rc = MQTTCLIENT_SUCCESS;
-    MQTTClients *m = handle;
-    Thread_lock_mutex(mqttclient_mutex);
-
-    if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
-        rc = MQTTCLIENT_FAILURE;
-    else {
-        m->disconnected_context = context;
-        m->disconnected = disconnected;
-    }
-
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-
 /**
  * Wrapper function to call disconnected on a separate thread.  A separate thread is needed to allow the
  * disconnected function to make API calls (e.g. connect)
@@ -502,23 +441,6 @@ static thread_return_type WINAPI call_disconnected(void *context) {
     free(pr->properties);
     free(pr);
     return 0;
-}
-
-
-int MQTTClient_setPublished(MQTTClient handle, void *context, MQTTClient_published *published) {
-    int rc = MQTTCLIENT_SUCCESS;
-    MQTTClients *m = handle;
-    Thread_lock_mutex(mqttclient_mutex);
-
-    if (m == NULL || m->c->connect_state != NOT_IN_PROGRESS)
-        rc = MQTTCLIENT_FAILURE;
-    else {
-        m->published_context = context;
-        m->published = published;
-    }
-
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
 }
 
 /* This is the thread function that handles the calling of callback functions if set */
@@ -1069,21 +991,6 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
     return response.reasonCode;
 }
 
-
-MQTTResponse MQTTClient_connect5(MQTTClient handle, MQTTClient_connectOptions *options,
-                                 MQTTProperties *connectProperties, MQTTProperties *willProperties) {
-    MQTTClients *m = handle;
-    MQTTResponse response = MQTTResponse_initializer;
-
-    if (m->c->MQTTVersion < MQTTVERSION_5) {
-        response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
-        return response;
-    }
-
-    return MQTTClient_connectAll(handle, options, connectProperties, willProperties);
-}
-
-
 MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
                                    MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
@@ -1260,17 +1167,6 @@ int MQTTClient_disconnect(MQTTClient handle, int timeout) {
     return rc;
 }
 
-
-int MQTTClient_disconnect5(MQTTClient handle, int timeout, enum MQTTReasonCodes reason, MQTTProperties *props) {
-    int rc = 0;
-
-    Thread_lock_mutex(mqttclient_mutex);
-    rc = MQTTClient_disconnect1(handle, timeout, 0, 1, reason, props);
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-
 int MQTTClient_isConnected(MQTTClient handle) {
     MQTTClients *m = handle;
     int rc = 0;
@@ -1388,20 +1284,6 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
     return resp;
 }
 
-
-int MQTTClient_subscribeMany(MQTTClient handle, int count, char *const *topic, int *qos) {
-    MQTTClients *m = handle;
-    MQTTResponse response = MQTTResponse_initializer;
-
-    if (m->c->MQTTVersion >= MQTTVERSION_5)
-        response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
-    else
-        response = MQTTClient_subscribeMany5(handle, count, topic, qos, NULL, NULL);
-
-    return response.reasonCode;
-}
-
-
 MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos,
                                    MQTTSubscribe_options *opts, MQTTProperties *props) {
     MQTTResponse rc;
@@ -1510,14 +1392,6 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char *con
     Thread_unlock_mutex(unsubscribe_mutex);
     return resp;
 }
-
-
-int MQTTClient_unsubscribeMany(MQTTClient handle, int count, char *const *topic) {
-    MQTTResponse response = MQTTClient_unsubscribeMany5(handle, count, topic, NULL);
-
-    return response.reasonCode;
-}
-
 
 MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char *topic, MQTTProperties *props) {
     MQTTResponse rc;
@@ -2017,29 +1891,6 @@ int MQTTClient_getPendingDeliveryTokens(MQTTClient handle, MQTTClient_deliveryTo
     return rc;
 }
 
-
-void MQTTClient_setTraceLevel(enum MQTTCLIENT_TRACE_LEVELS level) {
-    Log_setTraceLevel((enum LOG_LEVELS) level);
-}
-
-
-void MQTTClient_setTraceCallback(MQTTClient_traceCallback *callback) {
-    Log_setTraceCallback((Log_traceCallback *) callback);
-}
-
-
-int MQTTClient_setCommandTimeout(MQTTClient handle, unsigned long milliSeconds) {
-    int rc = MQTTCLIENT_SUCCESS;
-    MQTTClients *m = handle;
-
-    if (milliSeconds < 5000L)
-        rc = MQTTCLIENT_FAILURE;
-    else
-        m->commandTimeout = milliSeconds;
-    return rc;
-}
-
-
 MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
 #define MAX_INFO_STRINGS 8
     static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
@@ -2057,53 +1908,6 @@ MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
     libinfo[i].value = NULL;
     return libinfo;
 }
-
-
-const char *MQTTClient_strerror(int code) {
-    static char buf[30];
-    int chars = 0;
-
-    switch (code) {
-        case MQTTCLIENT_SUCCESS:
-            return "Success";
-        case MQTTCLIENT_FAILURE:
-            return "Failure";
-        case MQTTCLIENT_DISCONNECTED:
-            return "Disconnected";
-        case MQTTCLIENT_MAX_MESSAGES_INFLIGHT:
-            return "Maximum in-flight messages amount reached";
-        case MQTTCLIENT_BAD_UTF8_STRING:
-            return "Invalid UTF8 string";
-        case MQTTCLIENT_NULL_PARAMETER:
-            return "Invalid (NULL) parameter";
-        case MQTTCLIENT_TOPICNAME_TRUNCATED:
-            return "Topic containing NULL characters has been truncated";
-        case MQTTCLIENT_BAD_STRUCTURE:
-            return "Bad structure";
-        case MQTTCLIENT_BAD_QOS:
-            return "Invalid QoS value";
-        case MQTTCLIENT_SSL_NOT_SUPPORTED:
-            return "SSL is not supported";
-        case MQTTCLIENT_BAD_MQTT_VERSION:
-            return "Unrecognized MQTT version";
-        case MQTTCLIENT_BAD_PROTOCOL:
-            return "Invalid protocol scheme";
-        case MQTTCLIENT_BAD_MQTT_OPTION:
-            return "Options for wrong MQTT version";
-        case MQTTCLIENT_WRONG_MQTT_VERSION:
-            return "Client created for another version of MQTT";
-        case MQTTCLIENT_0_LEN_WILL_TOPIC:
-            return "Zero length will topic on connect";
-    }
-
-    chars = snprintf(buf, sizeof(buf), "Unknown error code %d", code);
-    if (chars >= sizeof(buf)) {
-        buf[sizeof(buf) - 1] = '\0';
-        Log(LOG_ERROR, 0, "Error writing %d chars with snprintf", chars);
-    }
-    return buf;
-}
-
 
 /**
  * See if any pending writes have been completed, and cleanup if so.

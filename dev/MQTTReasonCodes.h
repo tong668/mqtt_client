@@ -68,12 +68,5 @@ enum MQTTReasonCodes {
   MQTTREASONCODE_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED = 162
 };
 
-/**
- * Returns a printable string description of an MQTT V5 reason code.
- * @param value an MQTT V5 reason code.
- * @return the printable string description of the input reason code.
- * NULL if the code was not found.
- */
-LIBMQTT_API const char* MQTTReasonCode_toString(enum MQTTReasonCodes value);
 
 #endif

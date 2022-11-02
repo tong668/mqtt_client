@@ -38,7 +38,6 @@
 
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
 
-void MQTTProtocol_reconnect(const char *ip_address, Clients *client);
 
 int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
                          MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);

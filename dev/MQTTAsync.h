@@ -217,28 +217,6 @@
  */
 #define MQTT_BAD_SUBSCRIBE 0x80
 
-
-/**
- *  Initialization options
- */
-typedef struct
-{
-	/** The eyecatcher for this structure.  Must be MQTG. */
-	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
-	int struct_version;
-	/** 1 = we do openssl init, 0 = leave it to the application */
-	int do_openssl_init;
-} MQTTAsync_init_options;
-
-#define MQTTAsync_init_options_initializer { {'M', 'Q', 'T', 'G'}, 0, 0 }
-
-/**
- * Global init of mqtt library. Call once on program start to set global behaviour.
- * handle_openssl_init - if mqtt library should handle openssl init (1) or rely on the caller to init it before using mqtt (0)
- */
-LIBMQTT_API void MQTTAsync_global_init(MQTTAsync_init_options* inits);
-
 /**
  * A handle representing an MQTT client. A valid client handle is available
  * following a successful call to MQTTAsync_create().
@@ -437,23 +415,6 @@ typedef void MQTTAsync_connected(void* context, char* cause);
 typedef void MQTTAsync_disconnected(void* context, MQTTProperties* properties,
 		enum MQTTReasonCodes reasonCode);
 
-/**
- * Sets the MQTTAsync_disconnected() callback function for a client.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- *
- * <b>Note:</b> Neither MQTTAsync_create() nor MQTTAsync_destroy() should be
- * called within this callback.
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to each of the callback functions to
- * provide access to the context information in the callback.
- * @param co A pointer to an MQTTAsync_connected() callback
- * function.  NULL removes the callback setting.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-LIBMQTT_API int MQTTAsync_setDisconnected(MQTTAsync handle, void* context, MQTTAsync_disconnected* co);
-
 /** The connect options that can be updated before an automatic reconnect. */
 typedef struct
 {
@@ -488,41 +449,6 @@ typedef struct
  * @return Return a non-zero value to update the connect data, zero to keep the same data.
  */
 typedef int MQTTAsync_updateConnectOptions(void* context, MQTTAsync_connectData* data);
-
-/**
- * Sets the MQTTAsync_updateConnectOptions() callback function for a client.
- * @param handle A valid client handle from a successful call to MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to each of the callback functions to
- * provide access to the context information in the callback.
- * @param co A pointer to an MQTTAsync_updateConnectOptions() callback
- * function.  NULL removes the callback setting.
- */
-LIBMQTT_API int MQTTAsync_setUpdateConnectOptions(MQTTAsync handle, void* context, MQTTAsync_updateConnectOptions* co);
-
-/**
- * Sets the MQTTPersistence_beforeWrite() callback function for a client.
- * @param handle A valid client handle from a successful call to MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to the callback function to
- * provide access to the context information in the callback.
- * @param co A pointer to an MQTTPersistence_beforeWrite() callback
- * function.  NULL removes the callback setting.
- */
-LIBMQTT_API int MQTTAsync_setBeforePersistenceWrite(MQTTAsync handle, void* context, MQTTPersistence_beforeWrite* co);
-
-
-/**
- * Sets the MQTTPersistence_afterRead() callback function for a client.
- * @param handle A valid client handle from a successful call to MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to the callback function to
- * provide access to the context information in the callback.
- * @param co A pointer to an MQTTPersistence_beforeWrite() callback
- * function.  NULL removes the callback setting.
- */
-LIBMQTT_API int MQTTAsync_setAfterPersistenceRead(MQTTAsync handle, void* context, MQTTPersistence_afterRead* co);
-
 
 /** The data returned on completion of an unsuccessful API call in the response callback onFailure. */
 typedef struct
@@ -762,10 +688,6 @@ typedef struct MQTTAsync_responseOptions
 
 #define MQTTAsync_responseOptions_initializer { {'M', 'Q', 'T', 'R'}, 1, NULL, NULL, 0, 0, NULL, NULL, MQTTProperties_initializer, MQTTSubscribe_options_initializer, 0, NULL}
 
-/** A synonym for responseOptions to better reflect its usage since MQTT 5.0 */
-typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
-#define MQTTAsync_callOptions_initializer MQTTAsync_responseOptions_initializer
-
 /**
  * This function sets the global callback functions for a specific client.
  * If your client application doesn't use a particular callback, set the
@@ -797,101 +719,6 @@ typedef struct MQTTAsync_responseOptions MQTTAsync_callOptions;
  */
 LIBMQTT_API int MQTTAsync_setCallbacks(MQTTAsync handle, void* context, MQTTAsync_connectionLost* cl,
 									 MQTTAsync_messageArrived* ma, MQTTAsync_deliveryComplete* dc);
-
-/**
- * This function sets the callback function for a connection lost event for
- * a specific client. Any necessary message acknowledgements and status
- * communications are handled in the background without any intervention
- * from the client application.
- *
- * <b>Note:</b> The MQTT client must be disconnected when this function is
- * called.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed the callback functions to provide
- * access to the context information in the callback.
- * @param cl A pointer to an MQTTAsync_connectionLost() callback
- * function. You can set this to NULL if your application doesn't handle
- * disconnections.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-
-LIBMQTT_API int MQTTAsync_setConnectionLostCallback(MQTTAsync handle, void* context,
-												  MQTTAsync_connectionLost* cl);
-
-/**
- * This function sets the callback function for a message arrived event for
- * a specific client. Any necessary message acknowledgements and status
- * communications are handled in the background without any intervention
- * from the client application.  If you do not set a messageArrived callback
- * function, you will not be notified of the receipt of any messages as a
- * result of a subscription.
- *
- * <b>Note:</b> The MQTT client must be disconnected when this function is
- * called.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to the callback functions to provide
- * access to the context information in the callback.
- * @param ma A pointer to an MQTTAsync_messageArrived() callback
- * function.  You can set this to NULL if your application doesn't handle
- * receipt of messages.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-LIBMQTT_API int MQTTAsync_setMessageArrivedCallback(MQTTAsync handle, void* context,
-												  MQTTAsync_messageArrived* ma);
-
-/**
- * This function sets the callback function for a delivery complete event
- * for a specific client. Any necessary message acknowledgements and status
- * communications are handled in the background without any intervention
- * from the client application.
- *
- * <b>Note:</b> The MQTT client must be disconnected when this function is
- * called.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to the callback functions to provide
- * access to the context information in the callback.
- * @param dc A pointer to an MQTTAsync_deliveryComplete() callback
- * function. You can set this to NULL if you do not want to check
- * for successful delivery.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-LIBMQTT_API int MQTTAsync_setDeliveryCompleteCallback(MQTTAsync handle, void* context,
-													MQTTAsync_deliveryComplete* dc);
-
-/**
- * Sets the MQTTAsync_connected() callback function for a client.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- * @param context A pointer to any application-specific context. The
- * the <i>context</i> pointer is passed to each of the callback functions to
- * provide access to the context information in the callback.
- * @param co A pointer to an MQTTAsync_connected() callback
- * function.  NULL removes the callback setting.
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-LIBMQTT_API int MQTTAsync_setConnected(MQTTAsync handle, void* context, MQTTAsync_connected* co);
-
-
-/**
- * Reconnects a client with the previously used connect options.  Connect
- * must have previously been called for this to work.
- * @param handle A valid client handle from a successful call to
- * MQTTAsync_create().
- * @return ::MQTTASYNC_SUCCESS if the callbacks were correctly set,
- * ::MQTTASYNC_FAILURE if an error occurred.
- */
-LIBMQTT_API int MQTTAsync_reconnect(MQTTAsync handle);
-
 
 /**
  * This function creates an MQTT client ready for connection to the
@@ -981,10 +808,6 @@ typedef struct
 	int persistQoS0;
 } MQTTAsync_createOptions;
 
-#define MQTTAsync_createOptions_initializer  { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_DEFAULT, 0, 0, 1, 1}
-
-#define MQTTAsync_createOptions_initializer5 { {'M', 'Q', 'C', 'O'}, 2, 0, 100, MQTTVERSION_5, 0, 0, 1, 1}
-
 
 LIBMQTT_API int MQTTAsync_createWithOptions(MQTTAsync* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context, MQTTAsync_createOptions* options);
@@ -1031,11 +854,6 @@ typedef struct
 } MQTTAsync_willOptions;
 
 #define MQTTAsync_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 1, NULL, NULL, 0, 0, { 0, NULL } }
-
-#define MQTT_SSL_VERSION_DEFAULT 0
-#define MQTT_SSL_VERSION_TLS_1_0 1
-#define MQTT_SSL_VERSION_TLS_1_1 2
-#define MQTT_SSL_VERSION_TLS_1_2 3
 
 /**
 * MQTTAsync_sslProperties defines the settings to establish an SSL/TLS connection using the
@@ -1159,8 +977,6 @@ typedef struct
 	 */
 	unsigned int protos_len;
 } MQTTAsync_SSLOptions;
-
-#define MQTTAsync_SSLOptions_initializer { {'M', 'Q', 'T', 'S'}, 5, NULL, NULL, NULL, NULL, NULL, 1, MQTT_SSL_VERSION_DEFAULT, 0, NULL, NULL, NULL, NULL, NULL, 0, NULL, 0 }
 
 /** Utility structure where name/value pairs are needed */
 typedef struct
@@ -1363,16 +1179,6 @@ typedef struct
 #define MQTTAsync_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 65535, NULL, NULL, NULL, 30, 0,\
 NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
 
-#define MQTTAsync_connectOptions_initializer5 { {'M', 'Q', 'T', 'C'}, 8, 60, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
-
-#define MQTTAsync_connectOptions_initializer_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 1, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_DEFAULT, 0, 1, 60, {0, NULL}, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
-
-#define MQTTAsync_connectOptions_initializer5_ws { {'M', 'Q', 'T', 'C'}, 8, 45, 0, 65535, NULL, NULL, NULL, 30, 0,\
-NULL, NULL, NULL, NULL, 0, NULL, MQTTVERSION_5, 0, 1, 60, {0, NULL}, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
-
-
 /**
   * This function attempts to connect a previously-created client (see
   * MQTTAsync_create()) to an MQTT server using the specified options. If you
@@ -1450,9 +1256,6 @@ typedef struct
 #define MQTTAsync_disconnectOptions_initializer { {'M', 'Q', 'T', 'D'}, 0, 0, NULL, NULL, NULL,\
 	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
 
-#define MQTTAsync_disconnectOptions_initializer5 { {'M', 'Q', 'T', 'D'}, 1, 0, NULL, NULL, NULL,\
-	MQTTProperties_initializer, MQTTREASONCODE_SUCCESS, NULL, NULL }
-
 /**
   * This function attempts to disconnect the client from the MQTT
   * server. In order to allow the client time to complete handling of messages
@@ -1472,17 +1275,6 @@ typedef struct
   * from the server
   */
 LIBMQTT_API int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* options);
-
-
-/**
-  * This function allows the client application to test whether or not a
-  * client is currently connected to the MQTT server.
-  * @param handle A valid client handle from a successful call to
-  * MQTTAsync_create().
-  * @return Boolean true if the client is connected, otherwise false.
-  */
-LIBMQTT_API int MQTTAsync_isConnected(MQTTAsync handle);
-
 
 /**
   * This function attempts to subscribe a client to a single topic, which may
@@ -1660,15 +1452,6 @@ LIBMQTT_API void MQTTAsync_freeMessage(MQTTAsync_message** msg);
 LIBMQTT_API void MQTTAsync_free(void* ptr);
 
 /**
-  * This function is used to allocate memory to be used or freed by the MQTT C client library,
-  * especially the data in the ::MQTTPersistence_afterRead and ::MQTTPersistence_beforeWrite
-  * callbacks. This is needed on Windows when the client library and application
-  * program have been compiled with different versions of the C compiler.
-  * @param size The size of the memory to be allocated.
-  */
-LIBMQTT_API void* MQTTAsync_malloc(size_t size);
-
-/**
   * This function frees the memory allocated to an MQTT client (see
   * MQTTAsync_create()). It should be called when the client is no longer
   * required.
@@ -1726,13 +1509,6 @@ LIBMQTT_API void MQTTAsync_setTraceCallback(MQTTAsync_traceCallback* callback);
   */
 LIBMQTT_API MQTTAsync_nameValue* MQTTAsync_getVersionInfo(void);
 
-/**
- * Returns a pointer to a string representation of the error code, or NULL.
- * Do not free after use. Returns NULL if the error code is unknown.
- * @param code the MQTTASYNC_ return code.
- * @return a static string representation of the error code.
- */
-LIBMQTT_API const char* MQTTAsync_strerror(int code);
 
 #if defined(__cplusplus)
      }

@@ -336,7 +336,6 @@ int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
       MQTTProperties_free(properties);
 
 exit:
-  FUNC_EXIT_RC(rc);
   return rc;
 }
 
@@ -373,23 +372,6 @@ struct {
   {MQTTPROPERTY_CODE_SUBSCRIPTION_IDENTIFIERS_AVAILABLE, "SUBSCRIPTION_IDENTIFIERS_AVAILABLE"},
   {MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE, "SHARED_SUBSCRIPTION_AVAILABLE"}
 };
-
-const char* MQTTPropertyName(enum MQTTPropertyCodes value)
-{
-  int i = 0;
-  const char* result = NULL;
-
-  for (i = 0; i < ARRAY_SIZE(nameToString); ++i)
-  {
-    if (nameToString[i].value == value)
-    {
-    	  result = nameToString[i].name;
-    	  break;
-    }
-  }
-  return result;
-}
-
 
 void MQTTProperties_free(MQTTProperties* props)
 {
@@ -451,21 +433,6 @@ int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes pro
 	return found;
 }
 
-
-int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid)
-{
-	int i = 0;
-	int count = 0;
-
-	for (i = 0; i < props->count; ++i)
-	{
-		if (propid == props->array[i].identifier)
-			count++;
-	}
-	return count;
-}
-
-
 int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
 	int i = 0;
@@ -509,35 +476,4 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCod
 int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getNumericValueAt(props, propid, 0);
-}
-
-
-MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
-{
-	int i = 0;
-	MQTTProperty* result = NULL;
-	int cur_index = 0;
-
-	for (i = 0; i < props->count; ++i)
-	{
-		int id = props->array[i].identifier;
-
-		if (id == propid)
-		{
-			if (cur_index == index)
-			{
-				result = &props->array[i];
-				break;
-			}
-			else
-				cur_index++;
-		}
-	}
-	return result;
-}
-
-
-MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
-{
-	return MQTTProperties_getPropertyAt(props, propid, 0);
 }

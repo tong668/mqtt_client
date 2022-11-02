@@ -52,14 +52,6 @@ enum MQTTPropertyCodes {
   MQTTPROPERTY_CODE_SHARED_SUBSCRIPTION_AVAILABLE = 42/**< The value is 241 */
 };
 
-/**
- * Returns a printable string description of an MQTT V5 property code.
- * @param value an MQTT V5 property code.
- * @return the printable string description of the input property code.
- * NULL if the code was not found.
- */
-LIBMQTT_API const char* MQTTPropertyName(enum MQTTPropertyCodes value);
-
 /** The one byte MQTT V5 property type */
 enum MQTTPropertyTypes {
   MQTTPROPERTY_TYPE_BYTE,
@@ -173,15 +165,6 @@ LIBMQTT_API MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 LIBMQTT_API int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 /**
- * Returns the number of instances of a property id. Most properties can exist only once.
- * User properties and subscription ids can exist more than once.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @return the number of times found.  Can be 0.
- */
-LIBMQTT_API int MQTTProperties_propertyCount(MQTTProperties *props, enum MQTTPropertyCodes propid);
-
-/**
  * Returns the integer value of a specific property.  The property given must be a numeric type.
  * @param props pointer to the property list.
  * @param propid the property id to check for.
@@ -199,21 +182,5 @@ LIBMQTT_API int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTP
  */
 LIBMQTT_API int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
-/**
- * Returns a pointer to the property structure for a specific property.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @return the pointer to the property structure if found.  NULL if not found.
- */
-LIBMQTT_API MQTTProperty* MQTTProperties_getProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
-
-/**
- * Returns a pointer to the property structure for a specific property when it's not the only instance.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @param index the instance number, starting at 0.
- * @return the pointer to the property structure if found.  NULL if not found.
- */
-LIBMQTT_API MQTTProperty* MQTTProperties_getPropertyAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
 #endif /* MQTTPROPERTIES_H */

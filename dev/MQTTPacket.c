@@ -862,20 +862,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * Free allocated storage for a various packet tyoes
- * @param pack pointer to the suback packet structure
- */
-void MQTTPacket_free_packet(MQTTPacket* pack)
-{
-	if (pack->header.bits.type == PUBLISH)
-		MQTTPacket_freePublish((Publish*)pack);
-	else
-		free(pack);
-}
-
-
 /**
  * Writes an integer as 4 bytes to an output buffer.
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
@@ -996,7 +982,6 @@ int bufchar(char* c, int count)
 		*c = *bufptr++;
 	return count;
 }
-
 
 int MQTTPacket_decodeBuf(char* buf, unsigned int* value)
 {

@@ -143,7 +143,6 @@ typedef struct
 	char* httpsProxy;               /**< HTTPS proxy */
 } Clients;
 
-int clientIDCompare(void* a, void* b);
 int clientSocketCompare(void* a, void* b);
 
 /**

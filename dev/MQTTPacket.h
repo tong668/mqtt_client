@@ -252,8 +252,6 @@ int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, cons
 int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID);
 int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 
-void MQTTPacket_free_packet(MQTTPacket* pack);
-
 void writeInt4(char** pptr, int anInt);
 int readInt4(char** pptr);
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
