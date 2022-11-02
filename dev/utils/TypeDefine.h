@@ -689,6 +689,9 @@ typedef struct {
 } qEntry;
 
 
+/** @brief raw uuid type */
+typedef unsigned char uuid_t[16];
+
 
 
 #endif /* _MUTEX_TYPE_H_ */

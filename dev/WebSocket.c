@@ -20,11 +20,6 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
-
-
-/** @brief raw uuid type */
-typedef unsigned char uuid_t[16];
-
 void uuid_generate(uuid_t out) {
     {
         /* very insecure, but generates a random uuid */
