@@ -12,9 +12,13 @@ IF (PAHO_USE_SELECT)
     add_definitions(-DUSE_SELECT=1)
 ENDIF ()
 
+#取消memory tracking
 IF (PAHO_HIGH_PERFORMANCE)
     add_definitions(-DHIGH_PERFORMANCE=1)
 ENDIF ()
+
+#取消离线消息持久化
+add_definitions(-DNO_PERSISTENCE=1)
 
 IF (NOT MQTT_DEV)
     #paho源码，不包括openssl

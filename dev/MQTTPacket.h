@@ -29,7 +29,6 @@ typedef unsigned int bool;
 typedef void* (*pf)(int, unsigned char, char*, size_t);
 
 #include "MQTTProperties.h"
-#include "MQTTReasonCodes.h"
 
 enum errors
 {
