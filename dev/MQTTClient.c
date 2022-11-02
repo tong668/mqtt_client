@@ -1269,7 +1269,6 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
         response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
     else
         response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
-
     return response.reasonCode;
 }
 

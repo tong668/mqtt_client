@@ -6,8 +6,6 @@ set(CMAKE_C_STANDARD 99)
 set(PAHO_USE_SELECT TRUE CACHE BOOL "Revert to select system call instead of poll")
 set(PAHO_HIGH_PERFORMANCE TRUE CACHE BOOL "Disable tracing and heap tracking")
 
-set(MQTT_DEV TRUE CACHE BOOL "Switch dev or paho src code")
-
 IF (PAHO_USE_SELECT)
     add_definitions(-DUSE_SELECT=1)
 ENDIF ()
@@ -20,13 +18,8 @@ ENDIF ()
 #取消离线消息持久化
 add_definitions(-DNO_PERSISTENCE=1)
 
-IF (NOT MQTT_DEV)
-    #paho源码，不包括openssl
-    add_subdirectory(src)
-ELSE ()
-    #正在开发的代码
-    add_subdirectory(dev)
-ENDIF ()
+#修改后的paho源码
+add_subdirectory(dev)
 
 #sample和单元测试
 add_subdirectory(sample)
