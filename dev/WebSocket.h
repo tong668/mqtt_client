@@ -22,16 +22,16 @@
  */
 #define WebSocket_CLOSE_NORMAL          1000
 #define WebSocket_CLOSE_GOING_AWAY      1001
-#define WebSocket_CLOSE_PROTOCOL_ERROR  1002
-#define WebSocket_CLOSE_UNKNOWN_DATA    1003
-#define WebSocket_CLOSE_RESERVED        1004
-#define WebSocket_CLOSE_NO_STATUS_CODE  1005 /* reserved: not to be used */
-#define WebSocket_CLOSE_ABNORMAL        1006 /* reserved: not to be used */
-#define WebSocket_CLOSE_BAD_DATA        1007
-#define WebSocket_CLOSE_POLICY          1008
-#define WebSocket_CLOSE_MSG_TOO_BIG     1009
-#define WebSocket_CLOSE_NO_EXTENSION    1010
-#define WebScoket_CLOSE_UNEXPECTED      1011
+//#define WebSocket_CLOSE_PROTOCOL_ERROR  1002
+//#define WebSocket_CLOSE_UNKNOWN_DATA    1003
+//#define WebSocket_CLOSE_RESERVED        1004
+//#define WebSocket_CLOSE_NO_STATUS_CODE  1005 /* reserved: not to be used */
+//#define WebSocket_CLOSE_ABNORMAL        1006 /* reserved: not to be used */
+//#define WebSocket_CLOSE_BAD_DATA        1007
+//#define WebSocket_CLOSE_POLICY          1008
+//#define WebSocket_CLOSE_MSG_TOO_BIG     1009
+//#define WebSocket_CLOSE_NO_EXTENSION    1010
+//#define WebScoket_CLOSE_UNEXPECTED      1011
 #define WebSocket_CLOSE_TLS_FAIL        1015 /* reserved: not be used */
 /** @} */
 

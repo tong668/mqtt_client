@@ -17,10 +17,6 @@
 
 #define HTTP_PROTOCOL(x) x ? "https" : "http"
 
-#if defined(LIBUUID)
-#include <uuid/uuid.h>
-#else /* if defined(USE_LIBUUID) */
-
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
@@ -28,10 +24,6 @@
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
 
-/**
- * @brief generates a uuid, compatible with RFC 4122, version 4 (random)
- * @note Uses a very insecure algorithm but no external dependencies
- */
 void uuid_generate(uuid_t out) {
     {
         /* very insecure, but generates a random uuid */
@@ -43,21 +35,6 @@ void uuid_generate(uuid_t out) {
         out[8] = (out[8] & 0x3F) | 0x80;
     }
 }
-
-/** @brief converts a uuid to a string */
-void uuid_unparse(uuid_t uu, char *out) {
-    int i;
-    for (i = 0; i < 16; ++i) {
-        if (i == 4 || i == 6 || i == 8 || i == 10) {
-            *out = '-';
-            ++out;
-        }
-        out += sprintf(out, "%02x", uu[i]);
-    }
-    *out = '\0';
-}
-
-#endif /* else if defined(LIBUUID) */
 
 /** raw websocket frame data */
 struct ws_frame {
@@ -91,21 +68,6 @@ static void WebSocket_pong(
 static int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len);
 
 
-/**
- * calculates the amount of data required for the websocket header
- *
- * this function is used to calculate how much offset is required before calling
- * @p WebSocket_putdatas, as that function will write data before the passed in
- * buffer
- *
- * @param[in,out]  net                 network connection
- * @param[in]      mask_data           whether to mask the data
- * @param[in]      data_len            amount of data in the payload
- *
- * @return the size in bytes of the websocket header required
- *
- * @see WebSocket_putdatas
- */
 size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, size_t data_len) {
     int ret = 0;
     if (net && net->websocket) {
@@ -121,25 +83,6 @@ size_t WebSocket_calculateFrameHeaderSize(networkHandles *net, int mask_data, si
     return ret;
 }
 
-
-/**
- * @brief builds a websocket frame for data transmission
- *
- * write a websocket header and will mask the payload in all the passed in
- * buffers
- *
- * @param[in,out]  net                 network connection
- * @param[in]      opcode              websocket opcode for the packet
- * @param[in]      mask_data           whether to mask the data
- * @param[in,out]  buf0                first buffer, will write before this
- * @param[in]      buf0len             size of first buffer
- * @param[in]      count               number of payload buffers
- * @param[in,out]  buffers             array of payload buffers
- * @param[in]      buflens             array of payload buffer sizes
- * @param[in]      freeData            array indicating to free payload buffers
- *
- * @return amount of data to write to socket
- */
 struct frameData {
     char *wsbuf0;
     size_t wsbuf0len;
@@ -255,19 +198,6 @@ static void WebSocket_unmaskData(size_t idx, PacketBuffers *bufs) {
     bufs->mask[0] = bufs->mask[1] = bufs->mask[2] = bufs->mask[3] = 0;
 }
 
-
-/**
- * sends out a websocket request on the given uri
- *
- * @param[in]      net                 network connection
- * @param[in]      ssl                 ssl flag
- * @param[in]      uri                 uri to connect to
- *
- * @retval SOCKET_ERROR                on failure
- * @retval 1                           on success
- *
- * @see WebSocket_upgrade
- */
 int WebSocket_connect(networkHandles *net, int ssl, const char *uri) {
     int rc;
     char *buf = NULL;
@@ -364,13 +294,6 @@ int WebSocket_connect(networkHandles *net, int ssl, const char *uri) {
     return rc;
 }
 
-/**
- * closes a websocket connection
- *
- * @param[in,out]  net                 structure containing network connection
- * @param[in]      status_code         websocket close status code
- * @param[in]      reason              reason for closing connection (optional)
- */
 void WebSocket_close(networkHandles *net, int status_code, const char *reason) {
     struct frameData fd;
     PacketBuffers nulbufs = {0, NULL, NULL, NULL, {0, 0, 0, 0}};
@@ -417,18 +340,6 @@ void WebSocket_close(networkHandles *net, int status_code, const char *reason) {
     return;
 }
 
-/**
- * @brief receives 1 byte from a socket
- *
- * @param[in,out]  net                 network connection
- * @param[out]     c                   byte that was read
- *
- * @retval SOCKET_ERROR                on error
- * @retval TCPSOCKET_INTERRUPTED       no data available
- * @retval TCPSOCKET_COMPLETE          on success
- *
- * @see WebSocket_getdata
- */
 int WebSocket_getch(networkHandles *net, char *c) {
     int rc = SOCKET_ERROR;
     if (net->websocket) {
@@ -479,19 +390,6 @@ void WebSocket_framePosSeekTo(size_t pos) {
     }
 }
 
-/**
- * @brief receives data from a socket.
- * It should receive all data from the socket that is immediately available.
- * Because it is encapsulated in websocket frames which cannot be
- *
- * @param[in,out]  net                 network connection
- * @param[in]      bytes               amount of data to get (0 if last packet)
- * @param[out]     actual_len          amount of data read
- *
- * @return a pointer to the read data
- *
- * @see WebSocket_getch
- */
 char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t *actual_len) {
     char *rv = NULL;
     int rc;
@@ -568,15 +466,6 @@ void WebSocket_rewindData(void) {
     frame_buffer_index = 0;
 }
 
-/**
- * reads raw socket data for underlying layers
- *
- * @param[in]      net                 network connection
- * @param[in]      bytes               number of bytes to read, 0 to complete packet
- * @param[in]      actual_len          amount of data read
- *
- * @return a buffer containing raw data
- */
 char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t *actual_len, int *rc) {
     char *rv = NULL;
 
@@ -665,13 +554,6 @@ char *WebSocket_getRawSocketData(networkHandles *net, size_t bytes, size_t *actu
     return rv;
 }
 
-/**
- * sends a "websocket pong" message
- *
- * @param[in]      net                 network connection
- * @param[in]      app_data            application data to put in payload
- * @param[in]      app_data_len        application data length
- */
 void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len) {
     if (net->websocket) {
         char *buf0 = NULL;
@@ -692,26 +574,6 @@ void WebSocket_pong(networkHandles *net, char *app_data, size_t app_data_len) {
     }
 }
 
-/**
- * writes data to a socket (websocket header will be prepended if required)
- *
- * @warning buf0 will be expanded (backwords before @p buf0 buffer, to add a
- * websocket frame header to the data if required).  So use
- * @p WebSocket_calculateFrameHeader, to determine if extra space is needed
- * before the @p buf0 pointer.
- *
- * @param[in,out]  net                 network connection
- * @param[in,out]  buf0                first buffer
- * @param[in]      buf0len             size of first buffer
- * @param[in]      count               number of payload buffers
- * @param[in,out]  buffers             array of paylaod buffers
- * @param[in]      buflens             array of payload buffer sizes
- * @param[in]      freeData            array indicating to free payload buffers
- *
- * @return amount of data wrote to socket
- *
- * @see WebSocket_calculateFrameHeaderSize
- */
 int WebSocket_putdatas(networkHandles *net, char **buf0, size_t *buf0len, PacketBuffers *bufs) {
     const int mask_data = 1; /* must mask websocket data from client */
     int rc;
@@ -736,18 +598,6 @@ int WebSocket_putdatas(networkHandles *net, char **buf0, size_t *buf0len, Packet
     return rc;
 }
 
-/**
- * receives incoming socket data and parses websocket frames
- * Copes with socket reads returning partial websocket frames by using the
- * SocketBuffer mechanism.
- *
- * @param[in]      net                 network connection
- * @param[out]     actual_len          amount of data actually read
- *
- * @retval TCPSOCKET_COMPLETE          packet received
- * @retval TCPSOCKET_INTERRUPTED       incomplete packet received
- * @retval SOCKET_ERROR                an error was encountered
- */
 int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len) {
     struct ws_frame *res = NULL;
     int rc = TCPSOCKET_COMPLETE;
@@ -944,18 +794,6 @@ int WebSocket_receiveFrame(networkHandles *net, size_t *actual_len) {
     return rc;
 }
 
-/**
- * case-insensitive string search
- *
- * similar to @p strcase, but takes a maximum length
- *
- * @param[in]      buf                 buffer to search
- * @param[in]      str                 string to find
- * @param[in]       len                length of the buffer
- *
- * @retval !NULL                       location of string found
- * @retval NULL                        string not found
- */
 const char *WebSocket_strcasefind(const char *buf, const char *str, size_t len) {
     const char *res = NULL;
     if (buf && len > 0u && str) {
@@ -1001,17 +839,6 @@ void WebSocket_terminate(void) {
     Socket_outTerminate();
 }
 
-/**
- * handles the websocket upgrade response
- *
- * @param[in,out]  net                 network connection to upgrade
- *
- * @retval SOCKET_ERROR                failed to upgrade network connection
- * @retval TCPSOCKET_INTERRUPTED       upgrade not complete, but not failed.  Try again
- * @retval 1                           socket upgraded to use websockets
- *
- * @see WebSocket_connect
- */
 int WebSocket_upgrade(networkHandles *net) {
     static const char *const ws_guid =
             "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
