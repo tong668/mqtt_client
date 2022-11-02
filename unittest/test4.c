@@ -1,40 +1,16 @@
-/*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * and Eclipse Distribution License v1.0 which accompany this distribution.
- *
- * The Eclipse Public License is available at
- *    https://www.eclipse.org/legal/epl-2.0/
- * and the Eclipse Distribution License is available at
- *   http://www.eclipse.org/org/documents/edl-v10.php.
- *
- * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs - MQTT 3.1.1 support
- *    Ian Craggs - test8 - failure callbacks
- *******************************************************************************/
-
 
 /**
  * @file
  * Tests for the Paho Asynchronous MQTT C client
  */
 
-
 #include "MQTTAsync.h"
 #include <string.h>
 #include <stdlib.h>
-
-#if !defined(_WIN32)
 	#include <sys/time.h>
   #include <sys/socket.h>
 	#include <unistd.h>
   #include <errno.h>
-#else
-	#include <windows.h>
-#endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -121,31 +97,16 @@ void MyLog(int LOGA_level, char* format, ...)
 {
 	static char msg_buf[256];
 	va_list args;
-#if defined(_WIN32) || defined(_WINDOWS)
-	struct timeb ts;
-#else
+
 	struct timeval ts;
-#endif
 	struct tm timeinfo;
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
-
-#if defined(_WIN32) || defined(_WINDOWS)
-	ftime(&ts);
-	localtime_s(&timeinfo, &ts.time);
-#else
 	gettimeofday(&ts, NULL);
 	localtime_r(&ts.tv_sec, &timeinfo);
-#endif
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
-
-#if defined(_WIN32) || defined(_WINDOWS)
-	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
-#else
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000L);
-#endif
-
 	va_start(args, format);
 	vsnprintf(&msg_buf[strlen(msg_buf)], sizeof(msg_buf) - strlen(msg_buf), format, args);
 	va_end(args);
@@ -154,25 +115,6 @@ void MyLog(int LOGA_level, char* format, ...)
 	fflush(stdout);
 }
 
-
-#if defined(_WIN32) || defined(_WINDOWS)
-#define mqsleep(A) Sleep(1000*A)
-#define START_TIME_TYPE DWORD
-static DWORD start_time = 0;
-START_TIME_TYPE start_clock(void)
-{
-	return GetTickCount();
-}
-#elif defined(AIX)
-#define mqsleep sleep
-#define START_TIME_TYPE struct timespec
-START_TIME_TYPE start_clock(void)
-{
-	static struct timespec start;
-	clock_gettime(CLOCK_REALTIME, &start);
-	return start;
-}
-#else
 #define mqsleep sleep
 #define START_TIME_TYPE struct timeval
 /* TODO - unused - remove? static struct timeval start_time; */
@@ -182,25 +124,7 @@ START_TIME_TYPE start_clock(void)
 	gettimeofday(&start_time, NULL);
 	return start_time;
 }
-#endif
 
-
-#if defined(_WIN32)
-long elapsed(START_TIME_TYPE start_time)
-{
-	return GetTickCount() - start_time;
-}
-#elif defined(AIX)
-#define assert(a)
-long elapsed(struct timespec start)
-{
-	struct timespec now, res;
-
-	clock_gettime(CLOCK_REALTIME, &now);
-	ntimersub(now, start, res);
-	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
-}
-#else
 long elapsed(START_TIME_TYPE start_time)
 {
 	struct timeval now, res;
@@ -209,7 +133,6 @@ long elapsed(START_TIME_TYPE start_time)
 	timersub(&now, &start_time, &res);
 	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
 }
-#endif
 
 #define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
 #define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
@@ -336,7 +259,6 @@ void test1_onSubscribe(void* context, MQTTAsync_successData* response)
 	assert("Good rc from send", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 }
 
-
 void test1_onConnect(void* context, MQTTAsync_successData* response)
 {
 	MQTTAsync c = (MQTTAsync)context;
@@ -408,12 +330,7 @@ int test1(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -714,11 +631,7 @@ int test3(struct Options options)
 	while (test_finished < num_clients)
 	{
 		MyLog(LOGA_DEBUG, "num_clients %d test_finished %d\n", num_clients, test_finished);
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
 	}
 
 	MyLog(LOGA_DEBUG, "TEST3: destroying clients");
@@ -726,7 +639,6 @@ int test3(struct Options options)
 	for (i = 0; i < num_clients; ++i)
 		MQTTAsync_destroy(&clientdata[i].c);
 
-//exit:
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -903,12 +815,7 @@ int test4(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(1000L);
-		#endif
-
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -986,12 +893,7 @@ int test5(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -1091,12 +993,7 @@ int test6(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	test_finished = 0;
 	cinfo.should_fail = 0; /* should connect through the serverURIs in connect options*/
 	opts.onSuccess = test6_onConnect;
@@ -1112,12 +1009,7 @@ int test6(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	test_finished = 0;
 	dopts.timeout = 0;
 	dopts.onSuccess = test6_onDisconnect;
@@ -1125,12 +1017,7 @@ int test6(struct Options options)
 	MQTTAsync_disconnect(cinfo.c, &dopts);
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	MQTTAsync_destroy(&cinfo.c);
 
 exit:
@@ -1308,11 +1195,7 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
 
 	test_finished = 0;
 	MyLog(LOGA_DEBUG, "Connecting");
@@ -1325,11 +1208,8 @@ int test7(struct Options options)
 		goto exit;
 
 	while (!test7_subscribed)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
+
 			usleep(10000L);
-		#endif
 
 	pubmsg.payload = "a much longer message that we can shorten to the extent that we need to payload up to 11";
 	pubmsg.payloadlen = 11;
@@ -1362,11 +1242,7 @@ int test7(struct Options options)
 	MQTTAsync_disconnect(c, &dopts); /* now there should be "orphaned" publications */
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
 	test_finished = 0;
 
 	rc = MQTTAsync_getPendingTokens(c, &tokens);
@@ -1410,13 +1286,7 @@ int test7(struct Options options)
 		assert("Good rc from connect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 		goto exit;
 	}
-
-	#if defined(_WIN32)
-		Sleep(5000);
-	#else
 		usleep(5000000L);
-	#endif
-
 	rc = MQTTAsync_getPendingTokens(c, &tokens);
 	assert("getPendingTokens rc == 0", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 	/* assert("should get no tokens back", tokens == NULL, "tokens was %p", tokens);
@@ -1432,12 +1302,7 @@ int test7(struct Options options)
 	MQTTAsync_disconnect(c, &dopts);
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -1478,7 +1343,6 @@ void test8_onPublishFailure(void* context, MQTTAsync_failureData* response)
 
 	test8_publishFailures++;
 }
-
 
 void test8_onDisconnectFailure(void* context, MQTTAsync_failureData* response)
 {
@@ -1588,12 +1452,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!test8_subscribed)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	int i = 0;
 	pubmsg.qos = 2;
 	ropts.onSuccess = test8_onPublish;
@@ -1616,11 +1475,7 @@ int test8(struct Options options)
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
 	test_finished = 0;
 
 	rc = MQTTAsync_getPendingTokens(c, &tokens);
@@ -1644,12 +1499,7 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!test8_subscribed)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	i = 0;
 	pubmsg.qos = 2;
 	ropts.onSuccess = test8_onPublish;
@@ -1672,11 +1522,7 @@ int test8(struct Options options)
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	while (!test_finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
 	test_finished = 0;
 
 	rc = MQTTAsync_getPendingTokens(c, &tokens);
@@ -1714,24 +1560,14 @@ int test8(struct Options options)
 		goto exit;
 
 	while (!test8_subscribed)
-#if defined(_WIN32)
-		Sleep(100);
-#else
 		usleep(10000L);
-#endif
-
 	test_finished = 0;
 	dopts.context = c;
 	rc = MQTTAsync_disconnect(c, &dopts);
 	assert("Good rc from disconnect", rc == MQTTASYNC_SUCCESS, "rc was %d", rc);
 
 	while (!test_finished)
-#if defined(_WIN32)
-		Sleep(100);
-#else
 		usleep(10000L);
-#endif
-
 	MQTTAsync_destroy(&c);
 
 exit:
@@ -1747,8 +1583,6 @@ void trace_callback(enum MQTTASYNC_TRACE_LEVELS level, char* message)
 {
 	printf("Trace : %d, %s\n", level, message);
 }
-
-
 
 
 int main(int argc, char** argv)

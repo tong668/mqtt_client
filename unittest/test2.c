@@ -1,19 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp., Ian Craggs and others
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * and Eclipse Distribution License v1.0 which accompany this distribution.
- *
- * The Eclipse Public License is available at
- *    https://www.eclipse.org/legal/epl-2.0/
- * and the Eclipse Distribution License is available at
- *   http://www.eclipse.org/org/documents/edl-v10.php.
- *
- * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs - fix thread id display
- *******************************************************************************/
 
 /**
  * @file
@@ -25,16 +9,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if !defined(_WIN32)
 	#include <sys/time.h>
 	#include <sys/socket.h>
 	#include <unistd.h>
   #include <errno.h>
 	#define WINAPI
-#else
-	#include <windows.h>
-	#define setenv(a, b, c) _putenv_s(a, b)
-#endif
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -141,31 +120,18 @@ void MyLog(int LOGA_level, char* format, ...)
 {
 	static char msg_buf[256];
 	va_list args;
-#if defined(_WIN32) || defined(_WINDOWS)
-	struct timeb ts;
-#else
+
 	struct timeval ts;
-#endif
 	struct tm timeinfo;
 
 	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
 	  return;
 
-#if defined(_WIN32) || defined(_WINDOWS)
-	ftime(&ts);
-	localtime_s(&timeinfo, &ts.time);
-#else
 	gettimeofday(&ts, NULL);
 	localtime_r(&ts.tv_sec, &timeinfo);
-#endif
+
 	strftime(msg_buf, 80, "%Y%m%d %H%M%S", &timeinfo);
-
-#if defined(_WIN32) || defined(_WINDOWS)
-	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
-#else
 	sprintf(&msg_buf[strlen(msg_buf)], ".%.3lu ", ts.tv_usec / 1000L);
-#endif
-
 	va_start(args, format);
 	vsnprintf(&msg_buf[strlen(msg_buf)], sizeof(msg_buf) - strlen(msg_buf), format, args);
 	va_end(args);
@@ -174,25 +140,6 @@ void MyLog(int LOGA_level, char* format, ...)
 	fflush(stdout);
 }
 
-
-#if defined(_WIN32) || defined(_WINDOWS)
-#define mqsleep(A) Sleep(1000*A)
-#define START_TIME_TYPE DWORD
-static DWORD start_time = 0;
-START_TIME_TYPE start_clock(void)
-{
-	return GetTickCount();
-}
-#elif defined(AIX)
-#define mqsleep sleep
-#define START_TIME_TYPE struct timespec
-START_TIME_TYPE start_clock(void)
-{
-	static struct timespec start;
-	clock_gettime(CLOCK_REALTIME, &start);
-	return start;
-}
-#else
 #define mqsleep sleep
 #define START_TIME_TYPE struct timeval
 /* TODO - unused - remove? static struct timeval start_time; */
@@ -202,25 +149,7 @@ START_TIME_TYPE start_clock(void)
 	gettimeofday(&start_time, NULL);
 	return start_time;
 }
-#endif
 
-
-#if defined(_WIN32)
-long elapsed(START_TIME_TYPE start_time)
-{
-	return GetTickCount() - start_time;
-}
-#elif defined(AIX)
-#define assert(a)
-long elapsed(struct timespec start)
-{
-	struct timespec now, res;
-
-	clock_gettime(CLOCK_REALTIME, &now);
-	ntimersub(now, start, res);
-	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
-}
-#else
 long elapsed(START_TIME_TYPE start_time)
 {
 	struct timeval now, res;
@@ -229,9 +158,6 @@ long elapsed(START_TIME_TYPE start_time)
 	timersub(&now, &start_time, &res);
 	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
 }
-#endif
-
-
 #define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
 #define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
 
@@ -278,13 +204,8 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
     	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
 }
 
-
-#if defined(_WIN32) || defined(_WIN64)
-mutex_type deliveryCompleted_mutex = NULL;
-#else
 pthread_mutex_t deliveryCompleted_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 mutex_type deliveryCompleted_mutex = &deliveryCompleted_mutex_store;
-#endif
 
 void lock_mutex(mutex_type amutex)
 {
@@ -379,32 +300,19 @@ thread_return_type WINAPI test1_sendAndReceive(void* n)
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test1_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(100000L);
-		#endif
-
 		wait_seconds = 30;
 		while ((test1_arrivedcount_qos[qos] < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", test1_arrivedcount_qos[qos], i);
-			#if defined(_WIN32)
-				Sleep(1000);
-			#else
+
 				usleep(1000000L);
-			#endif
 		}
 		assert("Message Arrived", wait_seconds > 0,
 				"Timed out waiting for message %d\n", i);
 	}
 
-#if defined(_WIN32)
-	return 0;
-#else
 	return NULL;
-#endif
 }
 
 
@@ -478,11 +386,7 @@ int test1(struct Options options)
 	int wait_seconds = 90;
 	while (((test1_arrivedcount < iterations*3) || (test1_deliveryCompleted < iterations*2)) && (wait_seconds-- > 0))
 	{
-		#if defined(_WIN32)
-			Sleep(1000);
-		#else
 			usleep(1000000L);
-		#endif
 	}
 	assert("Arrived count == 150", test1_arrivedcount == iterations*3, "arrivedcount was %d", test1_arrivedcount);
   assert("All Deliveries Complete", test1_deliveryCompleted == iterations*2,
@@ -571,22 +475,12 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		else
 			rc = MQTTClient_publishMessage(c, test_topic, &test2_pubmsg, &dt);
 		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(100000L);
-		#endif
-
 		wait_seconds = 10;
 		while ((test2_arrivedcount < i) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Arrived %d count %d", test2_arrivedcount, i);
-			#if defined(_WIN32)
-				Sleep(1000);
-			#else
 				usleep(1000000L);
-			#endif
 		}
 		assert("Message Arrived", wait_seconds > 0,
 				"Time out waiting for message %d\n", i );
@@ -601,11 +495,7 @@ void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
 		{
 			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);
-			#if defined(_WIN32)
-				Sleep(1000);
-			#else
 				usleep(1000000L);
-			#endif
 		}
 		assert("All Deliveries Complete", test2_deliveryCompleted == iterations,
 			   "Number of deliveryCompleted callbacks was %d\n",
@@ -678,11 +568,6 @@ int main(int argc, char** argv)
 	int rc = 0;
  	int (*tests[])() = {NULL, test1, test2};
 	int i;
-
-	#if defined(_WIN32) || defined(_WIN64)
-	deliveryCompleted_mutex = CreateMutex(NULL, 0, NULL);
-	#endif
-
 	xml = fopen("TEST-test2.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
 

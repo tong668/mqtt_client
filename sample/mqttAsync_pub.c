@@ -1,38 +1,15 @@
-/*******************************************************************************
- * Copyright (c) 2012, 2022 IBM Corp., Ian Craggs
- *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v2.0
- * and Eclipse Distribution License v1.0 which accompany this distribution. 
- *
- * The Eclipse Public License is available at 
- *   https://www.eclipse.org/legal/epl-2.0/
- * and the Eclipse Distribution License is available at 
- *   http://www.eclipse.org/org/documents/edl-v10.php.
- *
- * Contributors:
- *    Ian Craggs - initial contribution
- *******************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "MQTTAsync.h"
 
-#if !defined(_WIN32)
 #include <unistd.h>
-#else
-#include <windows.h>
-#endif
-
-#if defined(_WRS_KERNEL)
-#include <OsWrapper.h>
-#endif
 
 #define ADDRESS     "tcp://192.168.101.4:1883"
-#define CLIENTID    "ExampleClientPub_async"
-#define TOPIC       "mqtt/pub/test"
-#define PAYLOAD     "Hello World!"
+#define CLIENTID    "mqttAsync_pub"
+#define TOPIC       "MQTT Examples"
+#define PAYLOAD     "hello mqtt!"
 #define QOS         1
 #define TIMEOUT     10000L
 
@@ -169,17 +146,11 @@ int main(int argc, char* argv[])
 		printf("Failed to start connect, return code %d\n", rc);
 		exit(EXIT_FAILURE);
 	}
-
 	printf("Waiting for publication of %s\n"
          "on topic %s for client with ClientID: %s\n",
          PAYLOAD, TOPIC, CLIENTID);
 	while (!finished)
-		#if defined(_WIN32)
-			Sleep(100);
-		#else
 			usleep(10000L);
-		#endif
-
 	MQTTAsync_destroy(&client);
  	return rc;
 }
