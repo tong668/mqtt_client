@@ -93,20 +93,10 @@ typedef struct {
     unsigned long commandTimeout;
 } MQTTClients;
 
-struct props_rc_parms {
-    MQTTClients *m;
-    MQTTProperties *properties;
-    enum MQTTReasonCodes reasonCode;
-};
 
 static void MQTTClient_terminate(void);
 
 static void MQTTClient_emptyMessageQueue(Clients *client);
-
-//static int MQTTClient_deliverMessage(
-//        int rc, MQTTClients *m,
-//        char **topicName, int *topicLen,
-//        MQTTClient_message **message);
 
 static int clientSockCompare(void *a, void *b);
 
@@ -327,47 +317,17 @@ void MQTTClient_free(void *memory) {
     free(memory);
 }
 
-
-/**
- * List callback function for comparing clients by socket
- * @param a first integer value
- * @param b second integer value
- * @return boolean indicating whether a and b are equal
- */
 static int clientSockCompare(void *a, void *b) {
     MQTTClients *m = (MQTTClients *) a;
     return m->c->net.socket == *(int *) b;
 }
 
-
-/**
- * Wrapper function to call connection lost on a separate thread.  A separate thread is needed to allow the
- * connectionLost function to make API calls (e.g. connect)
- * @param context a pointer to the relevant client
- * @return thread_return_type standard thread return value - not used here
- */
 static thread_return_type WINAPI connectionLost_call(void *context) {
     MQTTClients *m = (MQTTClients *) context;
 
     (*(m->cl))(m->context, NULL);
     return 0;
 }
-
-/**
- * Wrapper function to call disconnected on a separate thread.  A separate thread is needed to allow the
- * disconnected function to make API calls (e.g. connect)
- * @param context a pointer to the relevant client
- * @return thread_return_type standard thread return value - not used here
- */
-//static thread_return_type WINAPI call_disconnected(void *context) {
-//    struct props_rc_parms *pr = (struct props_rc_parms *) context;
-//
-//    (*(pr->m->disconnected))(pr->m->disconnected_context, pr->properties, pr->reasonCode);
-//    MQTTProperties_free(pr->properties);
-//    free(pr->properties);
-//    free(pr);
-//    return 0;
-//}
 
 /* This is the thread function that handles the calling of callback functions if set */
 static thread_return_type WINAPI MQTTClient_run(void *n) {
@@ -451,27 +411,7 @@ static thread_return_type WINAPI MQTTClient_run(void *n) {
                     Log(TRACE_MIN, -1, "Posting unsuback semaphore for client %s", m->c->clientID);
                     m->pack = pack;
                     Thread_post_sem(m->unsuback_sem);
-                } /*else if (m->c->MQTTVersion >= MQTTVERSION_5) {
-                    if (pack->header.bits.type == DISCONNECT && m->disconnected) {
-                        struct props_rc_parms *dp;
-                        Ack *disc = (Ack *) pack;
-
-                        dp = malloc(sizeof(struct props_rc_parms));
-                        if (dp) {
-                            dp->m = m;
-                            dp->reasonCode = disc->rc;
-                            dp->properties = malloc(sizeof(MQTTProperties));
-                            if (dp->properties) {
-                                *(dp->properties) = disc->properties;
-                                MQTTClient_disconnect1(m, 10, 0, 1, MQTTREASONCODE_SUCCESS, NULL);
-                                Log(TRACE_MIN, -1, "Calling disconnected for client %s", m->c->clientID);
-                                Thread_start(call_disconnected, dp);
-                            } else
-                                free(dp);
-                        }
-                        free(disc);
-                    }
-                }*/
+                }
             } else if (m->c->connect_state == TCP_IN_PROGRESS) {
                 int error;
                 socklen_t len = sizeof(error);
@@ -675,8 +615,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
         else {
             if (m->c->net.http_proxy) {
                 m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-//                if ((rc = Proxy_connect(&m->c->net, 0, serverURI)) == SOCKET_ERROR)
-//                    goto exit;
+
             }
 
             if (m->websocket) {
@@ -738,13 +677,6 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
                     if (m->c->connected != 1)
                         rc = MQTTCLIENT_DISCONNECTED;
                 }
-             /*   if (m->c->MQTTVersion == MQTTVERSION_5) {
-                    if ((resp.properties = malloc(sizeof(MQTTProperties))) == NULL) {
-                        rc = PAHO_MEMORY_ERROR;
-                        goto exit;
-                    }
-                    *resp.properties = MQTTProperties_copy(&connack->properties);
-                }*/
             }
             MQTTPacket_freeConnack(connack);
             m->pack = NULL;
@@ -796,9 +728,6 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
     setRetryLoopInterval(options->keepAliveInterval);
     m->c->MQTTVersion = options->MQTTVersion;
     m->c->cleanstart = m->c->cleansession = 0;
-  /*  if (m->c->MQTTVersion >= MQTTVERSION_5)
-        m->c->cleanstart = options->cleanstart;
-    else*/
         m->c->cleansession = options->cleansession;
     m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
     if (options->struct_version >= 6) {
@@ -873,17 +802,6 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 
     if (options->struct_version >= 3)
         MQTTVersion = options->MQTTVersion;
-/*    else
-        MQTTVersion = MQTTVERSION_DEFAULT;*/
-
-  /*  if (MQTTVersion == MQTTVERSION_DEFAULT) {
-        rc = MQTTClient_connectURIVersion(handle, options, serverURI, 4, start, millisecsTimeout,
-                                          connectProperties, willProperties);
-        if (rc.reasonCode != MQTTCLIENT_SUCCESS) {
-            rc = MQTTClient_connectURIVersion(handle, options, serverURI, 3, start, millisecsTimeout,
-                                              connectProperties, willProperties);
-        }
-    } else*/
         rc = MQTTClient_connectURIVersion(handle, options, serverURI, MQTTVersion, start, millisecsTimeout,
                                           connectProperties, willProperties);
 
@@ -897,9 +815,6 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions 
 int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
     MQTTClients *m = handle;
     MQTTResponse response;
-
-//    if (m->c->MQTTVersion >= MQTTVERSION_5)
-//        return MQTTCLIENT_WRONG_MQTT_VERSION;
 
     response = MQTTClient_connectAll(handle, options, NULL, NULL);
 
@@ -954,19 +869,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions 
         rc.reasonCode = MQTTCLIENT_BAD_UTF8_STRING;
         goto exit;
     }
-
-   /* if (options->MQTTVersion != MQTTVERSION_DEFAULT &&
-        (options->MQTTVersion < MQTTVERSION_3_1 || options->MQTTVersion > MQTTVERSION_5)) {
-        rc.reasonCode = MQTTCLIENT_BAD_MQTT_VERSION;
-        goto exit;
-    }*/
-
-   /* if (options->MQTTVersion >= MQTTVERSION_5) {
-        if (options->cleansession != 0) {
-            rc.reasonCode = MQTTCLIENT_BAD_MQTT_OPTION;
-            goto exit;
-        }
-    } else */if (options->cleanstart != 0) {
+if (options->cleanstart != 0) {
         rc.reasonCode = MQTTCLIENT_BAD_MQTT_OPTION;
         goto exit;
     }
@@ -1138,29 +1041,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
         Thread_lock_mutex(mqttclient_mutex);
         if (pack != NULL) {
             Suback *sub = (Suback *) pack;
-
-          /*  if (m->c->MQTTVersion == MQTTVERSION_5) {
-                if (sub->properties.count > 0) {
-                    if ((resp.properties = malloc(sizeof(MQTTProperties))) == NULL) {
-                        rc = PAHO_MEMORY_ERROR;
-                        goto exit;
-                    }
-                    *resp.properties = MQTTProperties_copy(&sub->properties);
-                }
-                resp.reasonCodeCount = sub->qoss->count;
-                resp.reasonCode = *(int *) sub->qoss->first->content;
-                if (sub->qoss->count > 1) {
-                    ListElement *current = NULL;
-                    int rc_count = 0;
-
-                    if ((resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (sub->qoss->count))) == NULL) {
-                        rc = PAHO_MEMORY_ERROR;
-                        goto exit;
-                    }
-                    while (ListNextElement(sub->qoss, &current))
-                        (resp.reasonCodes)[rc_count++] = *(enum MQTTReasonCodes *) (current->content);
-                }
-            } else*/ {
+ {
                 ListElement *current = NULL;
                 i = 0;
                 while (ListNextElement(sub->qoss, &current)) {
@@ -1202,9 +1083,6 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
     MQTTClients *m = handle;
     MQTTResponse response = MQTTResponse_initializer;
 
-//    if (m->c->MQTTVersion >= MQTTVERSION_5)
-//        response.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
-//    else
         response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
     return response.reasonCode;
 }
@@ -1254,30 +1132,6 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char *con
         Thread_lock_mutex(mqttclient_mutex);
         if (pack != NULL) {
             Unsuback *unsub = (Unsuback *) pack;
-
-            /*if (m->c->MQTTVersion == MQTTVERSION_5) {
-                if (unsub->properties.count > 0) {
-                    if ((resp.properties = malloc(sizeof(MQTTProperties))) == NULL) {
-                        rc = PAHO_MEMORY_ERROR;
-                        goto exit;
-                    }
-                    *resp.properties = MQTTProperties_copy(&unsub->properties);
-                }
-                resp.reasonCodeCount = unsub->reasonCodes->count;
-                resp.reasonCode = *(int *) unsub->reasonCodes->first->content;
-                if (unsub->reasonCodes->count > 1) {
-                    ListElement *current = NULL;
-                    int rc_count = 0;
-
-                    if ((resp.reasonCodes = malloc(sizeof(enum MQTTReasonCodes) * (unsub->reasonCodes->count))) ==
-                        NULL) {
-                        rc = PAHO_MEMORY_ERROR;
-                        goto exit;
-                    }
-                    while (ListNextElement(unsub->reasonCodes, &current))
-                        (resp.reasonCodes)[rc_count++] = *(enum MQTTReasonCodes *) (current->content);
-                }
-            } else*/
                 resp.reasonCode = rc;
             rc = MQTTProtocol_handleUnsubacks(pack, m->c->net.socket);
             m->pack = NULL;
@@ -1378,14 +1232,6 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int p
     }
     p->msgId = msgid;
     p->MQTTVersion = m->c->MQTTVersion;
-//    if (m->c->MQTTVersion >= MQTTVERSION_5) {
-//        if (properties)
-//            p->properties = *properties;
-//        else {
-//            MQTTProperties props = MQTTProperties_initializer;
-//            p->properties = props;
-//        }
-//    }
 
     rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
 
@@ -1469,8 +1315,6 @@ int MQTTClient_publishMessage(MQTTClient handle, const char *topicName, MQTTClie
     if (strncmp(message->struct_id, "MQTM", 4) != 0 ||
         (message->struct_version != 0 && message->struct_version != 1))
         rc.reasonCode = MQTTCLIENT_BAD_STRUCTURE;
-//    else if (m->c->MQTTVersion >= MQTTVERSION_5)
-//        rc.reasonCode = MQTTCLIENT_WRONG_MQTT_VERSION;
     else
         rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
     return rc.reasonCode;
@@ -1529,10 +1373,6 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, ELAPSED_TIME_TYPE timeout, int
 
                 ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp *) pack : *(Puback *) pack;
                 msgid = ack.msgId;
-//                if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published) {
-//                    Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, msgid);
-//                    (*(m->published))(m->published_context, msgid, pack->header.bits.type, &ack.properties, ack.rc);
-//                }
                 *rc = (pack->header.bits.type == PUBCOMP) ?
                       MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
                 if (m && m->dc) {
@@ -1542,12 +1382,6 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, ELAPSED_TIME_TYPE timeout, int
             } else if (pack->header.bits.type == PUBREC) {
                 Pubrec *pubrec = (Pubrec *) pack;
 
-//                if (m && m->c->MQTTVersion >= MQTTVERSION_5 && m->published &&
-//                    pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR) {
-//                    Log(TRACE_MIN, -1, "Calling published for client %s, msgid %d", m->c->clientID, ack.msgId);
-//                    (*(m->published))(m->published_context, pubrec->msgId, pack->header.bits.type,
-//                                      &pubrec->properties, pubrec->rc);
-//                }
                 *rc = MQTTProtocol_handlePubrecs(pack, *sock);
             } else if (pack->header.bits.type == PUBREL)
                 *rc = MQTTProtocol_handlePubrels(pack, *sock);
@@ -1716,11 +1550,6 @@ MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
     return libinfo;
 }
 
-/**
- * See if any pending writes have been completed, and cleanup if so.
- * Cleaning up means removing any publication data that was stored because the write did
- * not originally complete.
- */
 static void MQTTProtocol_checkPendingWrites(void) {
     if (state.pending_writes.count > 0) {
         ListElement *le = state.pending_writes.first;

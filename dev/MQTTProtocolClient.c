@@ -37,26 +37,12 @@ typedef struct {
 	int ackType;
 } AckRequest;
 
-
-/**
- * List callback function for comparing Message structures by message id
- * @param a first integer value
- * @param b second integer value
- * @return boolean indicating whether a and b are equal
- */
 int messageIDCompare(void* a, void* b)
 {
 	Messages* msg = (Messages*)a;
 	return msg->msgid == *(int*)b;
 }
 
-
-/**
- * Assign a new message id for a client.  Make sure it isn't already being used and does
- * not exceed the maximum.
- * @param client a client structure
- * @return the next message id to use, or 0 if none available
- */
 int MQTTProtocol_assignMsgId(Clients* client)
 {
 	int start_msgid = client->msgID;
@@ -107,15 +93,6 @@ exit:
     return;
 }
 
-
-/**
- * Utility function to start a new publish exchange.
- * @param pubclient the client to send the publication to
- * @param publish the publication data
- * @param qos the MQTT QoS to use
- * @param retained boolean - whether to set the MQTT retained flag
- * @return the completion code
- */
 static int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish, int qos, int retained)
 {
 	int rc = TCPSOCKET_COMPLETE;
@@ -125,16 +102,6 @@ static int MQTTProtocol_startPublishCommon(Clients* pubclient, Publish* publish,
 	return rc;
 }
 
-
-/**
- * Start a new publish exchange.  Store any state necessary and try to send the packet
- * @param pubclient the client to send the publication to
- * @param publish the publication data
- * @param qos the MQTT QoS to use
- * @param retained boolean - whether to set the MQTT retained flag
- * @param mm - pointer to the message to send
- * @return the completion code
- */
 int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int retained, Messages** mm)
 {
 	Publish qos12pub = *publish;
@@ -157,16 +124,6 @@ int MQTTProtocol_startPublish(Clients* pubclient, Publish* publish, int qos, int
 	return rc;
 }
 
-
-/**
- * Copy and store message data for retries
- * @param publish the publication data
- * @param mm - pointer to the message data to store
- * @param qos the MQTT QoS to use
- * @param retained boolean - whether to set the MQTT retained flag
- * @param allocatePayload boolean - whether or not to malloc payload
- * @return pointer to the message data stored
- */
 Messages* MQTTProtocol_createMessage(Publish* publish, Messages **mm, int qos, int retained, int allocatePayload)
 {
 	Messages* m = malloc(sizeof(Messages));
@@ -213,13 +170,6 @@ exit:
 	return m;
 }
 
-
-/**
- * Store message data for possible retry
- * @param publish the publication data
- * @param len returned length of the data stored
- * @return the publication stored
- */
 Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 {
 	Publications* p = malloc(sizeof(Publications));
@@ -247,10 +197,7 @@ exit:
 	return p;
 }
 
-/**
- * Remove stored message data.  Opposite of storePublication
- * @param p stored publication to remove
- */
+
 void MQTTProtocol_removePublication(Publications* p)
 {
 	if (p && --(p->refcount) == 0)
@@ -263,14 +210,6 @@ void MQTTProtocol_removePublication(Publications* p)
 	}
 }
 
-/**
- * Process an incoming publish packet for a socket
- * The payload field of the packet has not been transferred to another buffer at this point.
- * If it's needed beyond the scope of this function, it has to be copied.
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 {
 	Publish* publish = (Publish*)pack;
@@ -320,39 +259,17 @@ int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 		m->qos = publish->header.bits.qos;
 		m->retain = publish->header.bits.retain;
 		m->MQTTVersion = publish->MQTTVersion;
-//		if (m->MQTTVersion >= MQTTVERSION_5)
-//			m->properties = MQTTProperties_copy(&publish->properties);
 		m->nextMessageType = PUBREL;
 		if ((listElem = ListFindItem(client->inboundMsgs, &(m->msgid), messageIDCompare)) != NULL)
 		{   /* discard queued publication with same msgID that the current incoming message */
 			Messages* msg = (Messages*)(listElem->content);
 			MQTTProtocol_removePublication(msg->publish);
-//			if (msg->MQTTVersion >= MQTTVERSION_5)
-//				MQTTProperties_free(&msg->properties);
 			ListInsert(client->inboundMsgs, m, sizeof(Messages) + len, listElem);
 			ListRemove(client->inboundMsgs, msg);
 			already_received = 1;
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
 
-//		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
-//		{
-//			Publish publish1;
-//
-//			publish1.header.bits.qos = m->qos;
-//			publish1.header.bits.retain = m->retain;
-//			publish1.msgId = m->msgid;
-//			publish1.topic = m->publish->topic;
-//			publish1.topiclen = m->publish->topiclen;
-//			publish1.payload = m->publish->payload;
-//			publish1.payloadlen = m->publish->payloadlen;
-//			publish1.MQTTVersion = m->MQTTVersion;
-//			publish1.properties = m->properties;
-//
-//			Protocol_processPublication(&publish1, client, 1);
-//			ListRemove(&(state.publications), m->publish);
-//			m->publish = NULL;
-//		} else
 		{	/* allocate and copy payload data as it's needed for pubrel.
 		       For other cases, it's done in Protocol_processPublication */
 			char *temp = m->publish->payload;
@@ -375,12 +292,6 @@ exit:
 	return rc;
 }
 
-/**
- * Process an incoming puback packet for a socket
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 {
 	Puback* puback = (Puback*)pack;
@@ -401,13 +312,10 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 		{
 			Log(TRACE_MIN, 6, NULL, "PUBACK", client->clientID, puback->msgId);
 			MQTTProtocol_removePublication(m->publish);
-//			if (m->MQTTVersion >= MQTTVERSION_5)
-//				MQTTProperties_free(&m->properties);
+
 			ListRemove(client->outboundMsgs, m);
 		}
 	}
-//	if (puback->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&puback->properties);
 	free(pack);
 	return rc;
 }
@@ -451,18 +359,6 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 		}
 		else
 		{
-//			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
-//			{
-//				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
-//						pubrec->rc, client->clientID, pubrec->msgId);
-//				MQTTProtocol_removePublication(m->publish);
-//				if (m->MQTTVersion >= MQTTVERSION_5)
-//					MQTTProperties_free(&m->properties);
-//				ListRemove(client->outboundMsgs, m);
-//				(++state.msgs_sent);
-//				send_pubrel = 0; /* in MQTT v5, stop the exchange if there is an error reported */
-//			}
-//			else
 			{
 				m->nextMessageType = PUBCOMP;
 				m->lastTouch = MQTTTime_now();
@@ -476,8 +372,6 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 	else
 		rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 
-//	if (pubrec->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pubrec->properties);
 	free(pack);
 	return rc;
 }
@@ -527,12 +421,7 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 				publish.payloadlen = m->publish->payloadlen;
 			}
 			publish.MQTTVersion = m->MQTTVersion;
-//			if (publish.MQTTVersion >= MQTTVERSION_5)
-//				publish.properties = m->properties;
-//			else
 				Protocol_processPublication(&publish, client, 0); /* only for 3.1.1 and lower */
-//			if (m->MQTTVersion >= MQTTVERSION_5)
-//				MQTTProperties_free(&m->properties);
 			if (m->publish)
 				ListRemove(&(state.publications), m->publish);
 			ListRemove(client->inboundMsgs, m);
@@ -545,19 +434,10 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 	else
 		rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 
-//	if (pubrel->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pubrel->properties);
 	free(pack);
 	return rc;
 }
 
-
-/**
- * Process an incoming pubcomp packet for a socket
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 {
 	Pubcomp* pubcomp = (Pubcomp*)pack;
@@ -585,24 +465,15 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 			{
 				Log(TRACE_MIN, 6, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
 				MQTTProtocol_removePublication(m->publish);
-//				if (m->MQTTVersion >= MQTTVERSION_5)
-//					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
 				(++state.msgs_sent);
 			}
 		}
 	}
-//	if (pubcomp->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pubcomp->properties);
 	free(pack);
 	return rc;
 }
 
-
-/**
- * MQTT protocol keepAlive processing.  Sends PINGREQ packets as required.
- * @param now current time
- */
 void MQTTProtocol_keepalive(START_TIME_TYPE now)
 {
 	ListElement* current = NULL;
@@ -660,13 +531,6 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 	}
 }
 
-
-/**
- * MQTT retry processing per client
- * @param now current time
- * @param client - the client to which to apply the retry processing
- * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
- */
 static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
 {
 	ListElement* outcurrent = NULL;
@@ -738,15 +602,6 @@ exit:
     return;
 }
 
-
-/**
- * Queue an ack message. This is used when the socket is full (e.g. SSL_ERROR_WANT_WRITE).
- * To be completed/cleared when the socket is no longer full
- * @param client the client that received the published message
- * @param ackType the type of ack to send
- * @param msgId the msg id of the message we are acknowledging
- * @return the completion code
- */
 int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId)
 {
 	int rc = 0;
@@ -763,13 +618,6 @@ int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId)
 	return rc;
 }
 
-
-/**
- * MQTT retry protocol and socket pending writes processing.
- * @param now current time
- * @param doRetry boolean - retries as well as pending writes?
- * @param regardless boolean - retry packets regardless of retry interval (used on reconnect)
- */
 void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 {
 	ListElement* current = NULL;
@@ -794,11 +642,6 @@ void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
 	}
 }
 
-
-/**
- * Free a client structure
- * @param client the client data to free
- */
 void MQTTProtocol_freeClient(Clients* client)
 {
 	/* free up pending message lists here, and any other allocated data */
@@ -828,11 +671,6 @@ void MQTTProtocol_freeClient(Clients* client)
 	/* don't free the client structure itself... this is done elsewhere */
 }
 
-
-/**
- * Empty a message list, leaving it able to accept new messages
- * @param msgList the message list to empty
- */
 void MQTTProtocol_emptyMessageList(List* msgList)
 {
 	ListElement* current = NULL;
@@ -841,8 +679,6 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 	{
 		Messages* m = (Messages*)(current->content);
 		MQTTProtocol_removePublication(m->publish);
-//		if (m->MQTTVersion >= MQTTVERSION_5)
-//			MQTTProperties_free(&m->properties);
 	}
 	ListEmpty(msgList);
 }
@@ -858,13 +694,6 @@ void MQTTProtocol_freeMessageList(List* msgList)
 	ListFree(msgList);
 }
 
-
-/**
- * Callback that is invoked when the socket is available for writing.
- * This is the last attempt made to acknowledge a message. Failures that
- * occur here are ignored.
- * @param socket the socket that is available for writing
- */
 void MQTTProtocol_writeAvailable(SOCKET socket)
 {
 	Clients* client = NULL;
@@ -901,14 +730,6 @@ void MQTTProtocol_writeAvailable(SOCKET socket)
 	ListEmpty(client->outboundQueue);
 }
 
-/**
-* Copy no more than dest_size -1 characters from the string pointed to by src to the array pointed to by dest.
-* The destination string will always be null-terminated.
-* @param dest the array which characters copy to
-* @param src the source string which characters copy from
-* @param dest_size the size of the memory pointed to by dest: copy no more than this -1 (allow for null).  Must be >= 1
-* @return the destination string pointer
-*/
 char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 {
   size_t count = dest_size;
@@ -925,11 +746,6 @@ char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 }
 
 
-/**
-* Duplicate a string, safely, allocating space on the heap
-* @param src the source string which characters copy from
-* @return the duplicated, allocated string
-*/
 char* MQTTStrdup(const char* src)
 {
 	size_t mlen = strlen(src) + 1;

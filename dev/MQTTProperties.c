@@ -76,12 +76,6 @@ int MQTTProperties_len(MQTTProperties* props)
 }
 
 
-/**
- * Add a new property to a property list
- * @param props the property list
- * @param prop the new property
- * @return code 0 is success
- */
 int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
 {
   int rc = 0, type;
@@ -216,114 +210,6 @@ int MQTTProperties_write(char** pptr, const MQTTProperties* properties)
   }
   return rc;
 }
-
-
-int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
-{
-  int type = -1,
-    len = -1;
-
-  prop->identifier = readChar(pptr);
-  type = MQTTProperty_getType(prop->identifier);
-  if (type >= MQTTPROPERTY_TYPE_BYTE && type <= MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
-  {
-    switch (type)
-    {
-      case MQTTPROPERTY_TYPE_BYTE:
-        prop->value.byte = readChar(pptr);
-        len = 1;
-        break;
-      case MQTTPROPERTY_TYPE_TWO_BYTE_INTEGER:
-        prop->value.integer2 = readInt(pptr);
-        len = 2;
-        break;
-      case MQTTPROPERTY_TYPE_FOUR_BYTE_INTEGER:
-        prop->value.integer4 = readInt4(pptr);
-        len = 4;
-        break;
-      case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
-        len = MQTTPacket_decodeBuf(*pptr, &prop->value.integer4);
-        *pptr += len;
-        break;
-      case MQTTPROPERTY_TYPE_BINARY_DATA:
-      case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-      case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-        if ((len = MQTTLenStringRead(&prop->value.data, pptr, enddata)) == -1)
-          break; /* error */
-        if ((prop->value.data.data = datadup(&prop->value.data)) == NULL)
-        {
-          len = -1;
-          break; /* error */
-        }
-        if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
-        {
-          int proplen = MQTTLenStringRead(&prop->value.value, pptr, enddata);
-
-          if (proplen == -1)
-          {
-            len = -1;
-            free(prop->value.data.data);
-            break;
-          }
-          len += proplen;
-          if ((prop->value.value.data = datadup(&prop->value.value)) == NULL)
-          {
-            len = -1;
-            free(prop->value.data.data);
-            break;
-          }
-        }
-        break;
-    }
-  }
-  return (len == -1) ? -1 : len + 1; /* 1 byte for identifier */
-}
-
-
-//int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
-//{
-//  int rc = 0;
-//  unsigned int remlength = 0;
-//
-//  /* we assume an initialized properties structure */
-//  if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
-//  {
-//    int proplen = 0;
-//
-//    *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
-//    properties->length = remlength;
-//    while (remlength > 0)
-//    {
-//      if (properties->count == properties->max_count)
-//      {
-//    	properties->max_count += 10;
-//    	if (properties->max_count == 10)
-//    	  properties->array = malloc(sizeof(MQTTProperty) * properties->max_count);
-//    	else
-//    	  properties->array = realloc(properties->array, sizeof(MQTTProperty) * properties->max_count);
-//      }
-//      if (properties->array == NULL)
-//      {
-//    	rc = PAHO_MEMORY_ERROR;
-//        goto exit;
-//      }
-//      if ((proplen = MQTTProperty_read(&properties->array[properties->count], pptr, enddata)) > 0)
-//          remlength -= proplen;
-//      else
-//          break;
-//      properties->count++;
-//    }
-//    if (remlength == 0)
-//        rc = 1; /* data read successfully */
-//  }
-//
-//  if (rc != 1 && properties->array != NULL)
-//      MQTTProperties_free(properties);
-//
-//exit:
-//  return rc;
-//}
-
 
 void MQTTProperties_free(MQTTProperties* props)
 {

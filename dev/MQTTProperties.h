@@ -97,8 +97,6 @@ LIBMQTT_API int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* pr
 int MQTTProperties_write(char** pptr, const MQTTProperties* properties);
 
 
-int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
-
 
 LIBMQTT_API void MQTTProperties_free(MQTTProperties* properties);
 

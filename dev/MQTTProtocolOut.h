@@ -33,6 +33,5 @@ int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTPrope
 
 int MQTTProtocol_handleUnsubacks(void *pack, SOCKET sock);
 
-int MQTTProtocol_handleDisconnects(void *pack, SOCKET sock);
 
 #endif

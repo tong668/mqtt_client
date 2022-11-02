@@ -46,12 +46,7 @@ pf new_packets[] =
 static char* readUTFlen(char** pptr, char* enddata, int* len);
 static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net);
 
-/**
- * Reads one MQTT packet from a socket.
- * @param socket a socket from which to read an MQTT packet
- * @param error pointer to the error code which is completed if no packet is returned
- * @return the packet structure or NULL if there was an error
- */
+
 void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 {
 	char* data = NULL;
@@ -111,15 +106,6 @@ exit:
 }
 
 
-/**
- * Sends an MQTT packet in one system call write
- * @param socket the socket to which to write the data
- * @param header the one-byte MQTT header
- * @param buffer the rest of the buffer to write (not including remaining length)
- * @param buflen the length of the data in buffer to be written
- * @param MQTTVersion the version of MQTT being used
- * @return the completion code (TCPSOCKET_COMPLETE etc)
- */
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData,
 		int MQTTVersion)
 {
@@ -154,19 +140,6 @@ exit:
 	return rc;
 }
 
-
-
-
-/**
- * Sends an MQTT packet from multiple buffers in one system call write
- * @param socket the socket to which to write the data
- * @param header the one-byte MQTT header
- * @param count the number of buffers
- * @param buffers the rest of the buffers to write (not including remaining length)
- * @param buflens the lengths of the data in the array of buffers to be written
- * @param the MQTT version being used
- * @return the completion code (TCPSOCKET_COMPLETE etc)
- */
 int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, int MQTTVersion)
 {
 	int i, rc = SOCKET_ERROR;
@@ -194,13 +167,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * Encodes the message length according to the MQTT algorithm
- * @param buf the buffer into which the encoded data is written
- * @param length the length to be encoded
- * @return the number of bytes written to buffer
- */
 int MQTTPacket_encode(char* buf, size_t length)
 {
 	int rc = 0;
@@ -219,13 +185,6 @@ int MQTTPacket_encode(char* buf, size_t length)
 	return rc;
 }
 
-
-/**
- * Decodes the message length according to the MQTT algorithm
- * @param socket the socket from which to read the bytes
- * @param value the decoded length returned
- * @return the number of bytes read from the socket
- */
 int MQTTPacket_decode(networkHandles* net, size_t* value)
 {
 	int rc = SOCKET_ERROR;
@@ -251,12 +210,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * Calculates an integer from two bytes read from the input buffer
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @return the integer value calculated
- */
 int readInt(char** pptr)
 {
 	char* ptr = *pptr;
@@ -265,19 +218,6 @@ int readInt(char** pptr)
 	return len;
 }
 
-
-/**
- * Reads a "UTF" string from the input buffer.  UTF as in the MQTT v3 spec which really means
- * a length delimited string.  So it reads the two byte length then the data according to
- * that length.  The end of the buffer is provided too, so we can prevent buffer overruns caused
- * by an incorrect length.
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @param enddata pointer to the end of the buffer not to be read beyond
- * @param len returns the calculcated value of the length bytes read
- * @return an allocated C string holding the characters read, or NULL if the length read would
- * have caused an overrun.
- *
- */
 static char* readUTFlen(char** pptr, char* enddata, int* len)
 {
 	char* string = NULL;
@@ -297,12 +237,6 @@ exit:
 	return string;
 }
 
-
-/**
- * Reads one character from the input buffer.
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @return the character read
- */
 unsigned char readChar(char** pptr)
 {
 	unsigned char c = **pptr;
@@ -311,23 +245,12 @@ unsigned char readChar(char** pptr)
 }
 
 
-/**
- * Writes one character to an output buffer.
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
- * @param c the character to write
- */
 void writeChar(char** pptr, char c)
 {
 	**pptr = c;
 	(*pptr)++;
 }
 
-
-/**
- * Writes an integer as 2 bytes to an output buffer.
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
- * @param anInt the integer to write
- */
 void writeInt(char** pptr, int anInt)
 {
 	**pptr = (char)(anInt / 256);
@@ -337,11 +260,6 @@ void writeInt(char** pptr, int anInt)
 }
 
 
-/**
- * Writes a "UTF" string to an output buffer.  Converts C string to length-delimited.
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
- * @param string the C string to write
- */
 void writeUTF(char** pptr, const char* string)
 {
 	size_t len = strlen(string);
@@ -351,12 +269,6 @@ void writeUTF(char** pptr, const char* string)
 }
 
 
-/**
- * Writes length delimited data to an output buffer
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
- * @param data the data to write
- * @param datalen the length of the data to write
- */
 void writeData(char** pptr, const void* data, int datalen)
 {
 	writeInt(pptr, datalen);
@@ -364,15 +276,6 @@ void writeData(char** pptr, const void* data, int datalen)
 	*pptr += datalen;
 }
 
-
-/**
- * Function used in the new packets table to create packets which have only a header.
- * @param MQTTVersion the version of MQTT
- * @param aHeader the MQTT header byte
- * @param data the rest of the packet
- * @param datalen the length of the rest of the packet
- * @return pointer to the packet structure
- */
 void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	static unsigned char header = 0;
@@ -381,11 +284,6 @@ void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data,
 }
 
 
-/**
- * Send an MQTT disconnect packet down a socket.
- * @param socket the open socket to send the data to
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props)
 {
 	Header header;
@@ -419,15 +317,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * Function used in the new packets table to create publish packets.
- * @param MQTTVersion
- * @param aHeader the MQTT header byte
- * @param data the rest of the packet
- * @param datalen the length of the rest of the packet
- * @return pointer to the packet structure
- */
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Publish* pack = NULL;
@@ -456,20 +345,6 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 	}
 	else
 		pack->msgId = 0;
-//	if (MQTTVersion >= MQTTVERSION_5)
-//	{
-//		MQTTProperties props = MQTTProperties_initializer;
-//		pack->properties = props;
-//		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
-//		{
-//			if (pack->properties.array)
-//				free(pack->properties.array);
-//			if (pack)
-//				free(pack);
-//			pack = NULL; /* signal protocol error */
-//			goto exit;
-//		}
-//	}
 	pack->payload = curdata;
 	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
@@ -485,33 +360,9 @@ void MQTTPacket_freePublish(Publish* pack)
 {
 	if (pack->topic != NULL)
 		free(pack->topic);
-//	if (pack->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pack->properties);
 	free(pack);
 }
 
-
-///**
-// * Free allocated storage for an ack packet.
-// * @param pack pointer to the publish packet structure
-// */
-//void MQTTPacket_freeAck(Ack* pack)
-//{
-////	if (pack->MQTTVersion >= MQTTVERSION_5)
-////		MQTTProperties_free(&pack->properties);
-//	free(pack);
-//}
-
-
-/**
- * Send an MQTT acknowledgement packet down a socket.
- * @param MQTTVersion the version of MQTT being used
- * @param type the MQTT packet type e.g. SUBACK
- * @param msgid the MQTT message id to use
- * @param dup boolean - whether to set the MQTT DUP flag
- * @param net the network handle to send the data to
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net)
 {
 	Header header;
@@ -532,15 +383,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * Send an MQTT PUBACK packet down a socket.
- * @param MQTTVersion the version of MQTT being used
- * @param msgid the MQTT message id to use
- * @param socket the open socket to send the data to
- * @param clientID the string client identifier, only used for tracing
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
@@ -550,45 +392,21 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
 	return rc;
 }
 
-
-/**
- * Free allocated storage for a suback packet.
- * @param pack pointer to the suback packet structure
- */
 void MQTTPacket_freeSuback(Suback* pack)
 {
-//	if (pack->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
 	free(pack);
 }
 
 
-/**
- * Free allocated storage for a suback packet.
- * @param pack pointer to the suback packet structure
- */
 void MQTTPacket_freeUnsuback(Unsuback* pack)
 {
-//	if (pack->MQTTVersion >= MQTTVERSION_5)
-//	{
-//		MQTTProperties_free(&pack->properties);
-//		if (pack->reasonCodes != NULL)
-//			ListFree(pack->reasonCodes);
-//	}
 	free(pack);
 }
 
 
-/**
- * Send an MQTT PUBREC packet down a socket.
- * @param MQTTVersion the version of MQTT being used
- * @param msgid the MQTT message id to use
- * @param socket the open socket to send the data to
- * @param clientID the string client identifier, only used for tracing
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
+
 int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
@@ -598,15 +416,6 @@ int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, cons
 }
 
 
-/**
- * Send an MQTT PUBREL packet down a socket.
- * @param MQTTVersion the version of MQTT being used
- * @param msgid the MQTT message id to use
- * @param dup boolean - whether to set the MQTT DUP flag
- * @param socket the open socket to send the data to
- * @param clientID the string client identifier, only used for tracing
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
@@ -616,14 +425,6 @@ int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* 
 }
 
 
-/**
- * Send an MQTT PUBCOMP packet down a socket.
- * @param MQTTVersion the version of MQTT being used
- * @param msgid the MQTT message id to use
- * @param socket the open socket to send the data to
- * @param clientID the string client identifier, only used for tracing
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
 {
 	int rc = 0;
@@ -632,15 +433,6 @@ int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, con
 	return rc;
 }
 
-
-/**
- * Function used in the new packets table to create acknowledgement packets.
- * @param MQTTVersion the version of MQTT being used
- * @param aHeader the MQTT header byte
- * @param data the rest of the packet
- * @param datalen the length of the rest of the packet
- * @return pointer to the packet structure
- */
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
 	Ack* pack = NULL;
@@ -661,45 +453,11 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		}
 		pack->msgId = readInt(&curdata);
 	}
-//	if (MQTTVersion >= MQTTVERSION_5)
-//	{
-//		MQTTProperties props = MQTTProperties_initializer;
-//
-//		pack->rc = MQTTREASONCODE_SUCCESS;
-//		pack->properties = props;
-//
-//		/* disconnect has no msgid */
-//		if (datalen > 2 || (pack->header.bits.type == DISCONNECT && datalen > 0))
-//			pack->rc = readChar(&curdata); /* reason code */
-//
-//		if (datalen > 3 || (pack->header.bits.type == DISCONNECT && datalen > 1))
-//		{
-//			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
-//			{
-//				if (pack->properties.array)
-//					free(pack->properties.array);
-//				if (pack)
-//					free(pack);
-//				pack = NULL; /* signal protocol error */
-//				goto exit;
-//			}
-//		}
-//	}
+
 exit:
 	return pack;
 }
 
-
-/**
- * Send an MQTT PUBLISH packet down a socket.
- * @param pack a structure from which to get some values to use, e.g topic, payload
- * @param dup boolean - whether to set the MQTT DUP flag
- * @param qos the value to use for the MQTT QoS setting
- * @param retained boolean - whether to set the MQTT retained flag
- * @param socket the open socket to send the data to
- * @param clientID the string client identifier, only used for tracing
- * @return the completion code (e.g. TCPSOCKET_COMPLETE)
- */
 int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, networkHandles* net, const char* clientID)
 {
 	Header header;
@@ -762,11 +520,6 @@ exit:
 	return rc;
 }
 
-/**
- * Writes an integer as 4 bytes to an output buffer.
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
- * @param anInt the integer to write
- */
 void writeInt4(char** pptr, int anInt)
 {
   **pptr = (char)(anInt / 16777216);
@@ -781,12 +534,6 @@ void writeInt4(char** pptr, int anInt)
 	(*pptr)++;
 }
 
-
-/**
- * Calculates an integer from two bytes read from the input buffer
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @return the integer value calculated
- */
 int readInt4(char** pptr)
 {
 	unsigned char* ptr = (unsigned char*)*pptr;

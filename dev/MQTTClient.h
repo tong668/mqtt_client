@@ -46,13 +46,7 @@
 
  #define MQTTCLIENT_0_LEN_WILL_TOPIC -17
 
-//#define MQTTVERSION_DEFAULT 0
-//
-//#define MQTTVERSION_3_1 3
-
 #define MQTTVERSION_3_1_1 4
-
-// #define MQTTVERSION_5 5
 
 #define MQTT_BAD_SUBSCRIBE 0x80
 
