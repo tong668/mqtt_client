@@ -51,8 +51,6 @@
 
 #define WINAPI
 
-
-
 #define MQTTCLIENT_PERSISTENCE_DEFAULT 0
 
 #define MQTTCLIENT_PERSISTENCE_NONE 1
@@ -62,6 +60,8 @@
 #define MQTTCLIENT_PERSISTENCE_ERROR -2
 
 #define MQTT_INVALID_PROPERTY_ID -2
+
+#define UCHAR_MAX 255 //todo
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {
@@ -209,6 +209,8 @@ typedef struct MQTTSubscribe_options
 #if !defined(min)
 #define min(A,B) ( (A) < (B) ? (A):(B))
 #endif
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 
 #define MAX_MSG_ID 65535
 
@@ -240,6 +242,7 @@ typedef struct MQTTSubscribe_options
 #define WebSocket_CLOSE_TLS_FAIL        1015 /* reserved: not be used */
 /** @} */
 
+#define HTTP_PROTOCOL(x) x ? "https" : "http"
 
 
 typedef void* MQTTClient;
@@ -668,6 +671,24 @@ typedef struct
     char* httpProxy;                /**< HTTP proxy */
     char* httpsProxy;               /**< HTTPS proxy */
 } Clients;
+
+#define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
+
+typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
+                                     enum MQTTReasonCodes reasonCode);
+
+typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
+                                  enum MQTTReasonCodes reasonCode);
+
+
+typedef struct {
+    MQTTClient_message *msg;
+    char *topicName;
+    int topicLen;
+    unsigned int seqno; /* only used on restore */
+} qEntry;
+
+
 
 
 #endif /* _MUTEX_TYPE_H_ */

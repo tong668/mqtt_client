@@ -15,11 +15,12 @@
 #  include <endian.h>
 #include "Socket.h"
 
-#define HTTP_PROTOCOL(x) x ? "https" : "http"
+
 
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
+
 
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];

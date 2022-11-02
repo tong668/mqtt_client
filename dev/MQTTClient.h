@@ -18,11 +18,6 @@ LIBMQTT_API int MQTTClient_setCallbacks(MQTTClient handle, void* context, MQTTCl
 									MQTTClient_messageArrived* ma, MQTTClient_deliveryComplete* dc);
 
 
-typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
-		enum MQTTReasonCodes reasonCode);
-
-typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
-		enum MQTTReasonCodes reasonCode);
 
 LIBMQTT_API int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
@@ -39,10 +34,6 @@ LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);
 
 
 LIBMQTT_API int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
-
-
-
-#define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
 LIBMQTT_API int MQTTClient_disconnect(MQTTClient handle, int timeout);
 

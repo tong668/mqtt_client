@@ -138,7 +138,6 @@ exit:
 	return rc;
 }
 
-
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
 

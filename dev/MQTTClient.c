@@ -53,13 +53,6 @@ static int running = 0;
 static int tostop = 0;
 static thread_id_type run_id = 0;
 
-typedef struct {
-    MQTTClient_message *msg;
-    char *topicName;
-    int topicLen;
-    unsigned int seqno; /* only used on restore */
-} qEntry;
-
 
 typedef struct {
     char *serverURI;

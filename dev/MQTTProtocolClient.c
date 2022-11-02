@@ -189,7 +189,6 @@ Publications* MQTTProtocol_storePublication(Publish* publish, int* len)
 		p = NULL;
 	}
 exit:
-	FUNC_EXIT;
 	return p;
 }
 
