@@ -4,11 +4,9 @@
 
 #include "LinkedList.h"
 #include "MQTTPacket.h"
-#include "Clients.h"
 #include "Log.h"
 #include "Messages.h"
 #include "MQTTProtocolClient.h"
-
 
 
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);

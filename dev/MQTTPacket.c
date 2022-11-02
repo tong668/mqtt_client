@@ -553,3 +553,11 @@ int MQTTPacket_VBIlen(int rem_len)
   return rc;
 }
 
+int clientSocketCompare(void* a, void* b)
+{
+    Clients* client = (Clients*)a;
+    /*printf("comparing %d with %d\n", (char*)a, (char*)b); */
+    return client->net.socket == *(SOCKET*)b;
+}
+
+

@@ -5,8 +5,6 @@
 
 #include "Socket.h"
 #include "LinkedList.h"
-#include "Clients.h"
-
 #include "MQTTProperties.h"
 
 #include <endian.h>
@@ -43,6 +41,8 @@ int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, con
 void writeInt4(char** pptr, int anInt);
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
 int MQTTPacket_VBIlen(int rem_len);
+
+int clientSocketCompare(void* a, void* b); //todo 暂时放这里
 
 #include "MQTTPacketOut.h"
 
