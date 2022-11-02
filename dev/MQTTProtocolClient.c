@@ -33,9 +33,6 @@
 #include <stdint.h>
 
 #include "MQTTProtocolClient.h"
-#if !defined(NO_PERSISTENCE)
-#include "MQTTPersistence.h"
-#endif
 #include "Socket.h"
 #include "SocketBuffer.h"
 
@@ -424,11 +421,6 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 		else
 		{
 			Log(TRACE_MIN, 6, NULL, "PUBACK", client->clientID, puback->msgId);
-			#if !defined(NO_PERSISTENCE)
-				rc = MQTTPersistence_remove(client,
-						(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
-								m->qos, puback->msgId);
-			#endif
 			MQTTProtocol_removePublication(m->publish);
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
@@ -484,11 +476,6 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 			{
 				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
 						pubrec->rc, client->clientID, pubrec->msgId);
-				#if !defined(NO_PERSISTENCE)
-					rc = MQTTPersistence_remove(client,
-							(pubrec->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
-							m->qos, pubrec->msgId);
-				#endif
 				MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);
@@ -565,11 +552,6 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 				publish.properties = m->properties;
 			else
 				Protocol_processPublication(&publish, client, 0); /* only for 3.1.1 and lower */
-			#if !defined(NO_PERSISTENCE)
-			rc += MQTTPersistence_remove(client,
-					(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_RECEIVED : PERSISTENCE_PUBLISH_RECEIVED,
-					m->qos, pubrel->msgId);
-			#endif
 			if (m->MQTTVersion >= MQTTVERSION_5)
 				MQTTProperties_free(&m->properties);
 			if (m->publish)
@@ -623,13 +605,6 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 			else
 			{
 				Log(TRACE_MIN, 6, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
-				#if !defined(NO_PERSISTENCE)
-					rc = MQTTPersistence_remove(client,
-							(m->MQTTVersion >= MQTTVERSION_5) ? PERSISTENCE_V5_PUBLISH_SENT : PERSISTENCE_PUBLISH_SENT,
-							m->qos, pubcomp->msgId);
-					if (rc != 0)
-						Log(LOG_ERROR, -1, "Error removing PUBCOMP for client id %s msgid %d from persistence", client->clientID, pubcomp->msgId);
-				#endif
 				MQTTProtocol_removePublication(m->publish);
 				if (m->MQTTVersion >= MQTTVERSION_5)
 					MQTTProperties_free(&m->properties);

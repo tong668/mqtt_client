@@ -157,9 +157,6 @@ typedef struct
 void MQTTAsync_lock_mutex(mutex_type amutex);
 void MQTTAsync_unlock_mutex(mutex_type amutex);
 void MQTTAsync_terminate(void);
-#if !defined(NO_PERSISTENCE)
-int MQTTAsync_restoreCommands(MQTTAsyncs* client);
-#endif
 int MQTTAsync_addCommand(MQTTAsync_queuedCommand* command, int command_size);
 void MQTTAsync_emptyMessageQueue(Clients* client);
 void MQTTAsync_freeResponses(MQTTAsyncs* m);

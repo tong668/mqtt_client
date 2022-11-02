@@ -27,13 +27,10 @@
 
 #include "MQTTPacket.h"
 #include "Log.h"
-#if !defined(NO_PERSISTENCE)
-	#include "MQTTPersistence.h"
-#endif
+
 #include "Messages.h"
 #include "WebSocket.h"
 #include "MQTTTime.h"
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -143,24 +140,6 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 				*error = SOCKET_ERROR; // was BAD_MQTT_PACKET;
 				Log(LOG_ERROR, -1, "Bad MQTT packet, type %d", ptype);
 			}
-#if !defined(NO_PERSISTENCE)
-			else if (header.bits.type == PUBLISH && header.bits.qos == 2)
-			{
-				int buf0len;
-				char *buf = malloc(10);
-
-				if (buf == NULL)
-				{
-					*error = SOCKET_ERROR;
-					goto exit;
-				}
-				buf[0] = header.byte;
-				buf0len = 1 + MQTTPacket_encode(&buf[1], remaining_length);
-				*error = MQTTPersistence_putPacket(net->socket, buf, buf0len, 1,
-					&data, &remaining_length, header.bits.type, ((Publish *)pack)->msgId, 1, MQTTVersion);
-				free(buf);
-			}
-#endif
 		}
 	}
 	if (pack)
@@ -199,17 +178,6 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
 	}
 	buf[0] = header.byte;
 	MQTTPacket_encode(&buf[1], buflen);
-
-#if !defined(NO_PERSISTENCE)
-	if (header.bits.type == PUBREL)
-	{
-		char* ptraux = buffer;
-		int msgId = readInt(&ptraux);
-
-		rc = MQTTPersistence_putPacket(net->socket, buf, buf0len, 1, &buffer, &buflen,
-			header.bits.type, msgId, 0, MQTTVersion);
-	}
-#endif
 	packetbufs.count = 1;
 	packetbufs.buffers = &buffer;
 	packetbufs.buflens = &buflen;
@@ -256,16 +224,6 @@ int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, in
 	}
 	buf[0] = header.byte;
 	MQTTPacket_encode(&buf[1], total);
-
-#if !defined(NO_PERSISTENCE)
-	if (header.bits.type == PUBLISH && header.bits.qos != 0)
-	{   /* persist PUBLISH QoS1 and Qo2 */
-		char *ptraux = bufs->buffers[2];
-		int msgId = readInt(&ptraux);
-		rc = MQTTPersistence_putPacket(net->socket, buf, buf0len, bufs->count, bufs->buffers, bufs->buflens,
-			header.bits.type, msgId, 0, MQTTVersion);
-	}
-#endif
 	rc = WebSocket_putdatas(net, &buf, &buf0len, bufs);
 
 	if (rc == TCPSOCKET_COMPLETE)

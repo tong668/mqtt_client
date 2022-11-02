@@ -43,13 +43,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-
-#if !defined(NO_PERSISTENCE)
-
-#include "MQTTPersistence.h"
-
-#endif
-
 #include "MQTTAsync.h"
 #include "MQTTAsyncUtils.h"
 #include "utf-8.h"
@@ -204,20 +197,6 @@ int MQTTAsync_createWithOptions(MQTTAsync *handle, const char *serverURI, const 
             m->c->MQTTVersion = options->MQTTVersion;
     }
 
-#if !defined(NO_PERSISTENCE)
-    rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
-    if (rc == 0) {
-        rc = MQTTPersistence_initialize(m->c, m->serverURI); /* inflight messages restored here */
-        if (rc == 0) {
-            if (m->createOptions && m->createOptions->struct_version >= 2 && m->createOptions->restoreMessages == 0)
-                MQTTAsync_unpersistCommandsAndMessages(m->c);
-            else {
-                MQTTAsync_restoreCommands(m);
-                MQTTPersistence_restoreMessageQueue(m->c);
-            }
-        }
-    }
-#endif
     ListAppend(bstate->clients, m->c, sizeof(Clients) + 3 * sizeof(List));
 
     exit:
@@ -251,9 +230,6 @@ void MQTTAsync_destroy(MQTTAsync *handle) {
     if (m->c) {
         SOCKET saved_socket = m->c->net.socket;
         char *saved_clientid = MQTTStrdup(m->c->clientID);
-#if !defined(NO_PERSISTENCE)
-        MQTTPersistence_close(m->c);
-#endif
         MQTTAsync_emptyMessageQueue(m->c);
         MQTTProtocol_freeClient(m->c);
         if (!ListRemove(bstate->clients, m->c))

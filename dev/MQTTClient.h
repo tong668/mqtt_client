@@ -118,9 +118,6 @@
 
 #include "utils/TypeDefine.h"
 #include "MQTTProperties.h"
-#if !defined(NO_PERSISTENCE)
-#include "MQTTClientPersistence.h"
-#endif
 
 /**
  * Return code: No error. Indicates successful completion of an MQTT client

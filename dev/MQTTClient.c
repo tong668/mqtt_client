@@ -49,14 +49,7 @@
 
 #include <sys/time.h>
 
-
 #include "MQTTClient.h"
-
-#if !defined(NO_PERSISTENCE)
-
-#include "MQTTPersistence.h"
-
-#endif
 
 #include "utf-8.h"
 #include "MQTTProtocol.h"
@@ -281,14 +274,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
     m->suback_sem = Thread_create_sem(&rc);
     m->unsuback_sem = Thread_create_sem(&rc);
 
-#if !defined(NO_PERSISTENCE)
-    rc = MQTTPersistence_create(&(m->c->persistence), persistence_type, persistence_context);
-    if (rc == 0) {
-        rc = MQTTPersistence_initialize(m->c, m->serverURI);
-        if (rc == 0)
-            MQTTPersistence_restoreMessageQueue(m->c);
-    }
-#endif
     ListAppend(bstate->clients, m->c, sizeof(Clients) + 3 * sizeof(List));
 
     exit:
@@ -344,9 +329,6 @@ void MQTTClient_destroy(MQTTClient *handle) {
     if (m->c) {
         SOCKET saved_socket = m->c->net.socket;
         char *saved_clientid = MQTTStrdup(m->c->clientID);
-#if !defined(NO_PERSISTENCE)
-        MQTTPersistence_close(m->c);
-#endif
         MQTTClient_emptyMessageQueue(m->c);
         MQTTProtocol_freeClient(m->c);
         if (!ListRemove(bstate->clients, m->c))
@@ -393,10 +375,6 @@ MQTTClient_deliverMessage(int rc, MQTTClients *m, char **topicName, int *topicLe
     *topicLen = qe->topicLen;
     if (strlen(*topicName) != *topicLen)
         rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
-#if !defined(NO_PERSISTENCE)
-    if (m->c->persistence)
-        MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry *) qe);
-#endif
     ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
     return rc;
 }
@@ -507,10 +485,6 @@ static thread_return_type WINAPI MQTTClient_run(void *n) {
                  * so we must be careful how we use it.
                  */
                 if (rc) {
-#if !defined(NO_PERSISTENCE)
-                    if (m->c->persistence)
-                        MQTTPersistence_unpersistQueueEntry(m->c, (MQTTPersistence_qEntry *) qe);
-#endif
                     ListRemove(m->c->messageQueue, qe);
                 } else
                     Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
@@ -656,9 +630,6 @@ static void MQTTClient_closeSession(Clients *client, enum MQTTReasonCodes reason
 
 static int MQTTClient_cleanSession(Clients *client) {
     int rc = 0;
-#if !defined(NO_PERSISTENCE)
-    rc = MQTTPersistence_clear(client);
-#endif
     MQTTProtocol_emptyMessageList(client->inboundMsgs);
     MQTTProtocol_emptyMessageList(client->outboundMsgs);
     MQTTClient_emptyMessageQueue(client);
@@ -708,10 +679,6 @@ void Protocol_processPublication(Publish *publish, Clients *client, int allocate
         mm->properties = MQTTProperties_copy(&publish->properties);
 
     ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName) + 1);
-#if !defined(NO_PERSISTENCE)
-    if (client->persistence)
-        MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry *) qe);
-#endif
     exit:
     FUNC_EXIT;
 }
