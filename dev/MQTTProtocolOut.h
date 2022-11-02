@@ -36,17 +36,24 @@
 #define WSS_DEFAULT_PORT 443
 #define PROXY_DEFAULT_PORT 8080
 
-size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port);
-void MQTTProtocol_reconnect(const char* ip_address, Clients* client);
-int MQTTProtocol_connect(const char* ip_address, Clients* acClients, int websocket, int MQTTVersion,
-		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout);
+size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
 
-int MQTTProtocol_handlePingresps(void* pack, SOCKET sock);
-int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
-		MQTTSubscribe_options* opts, MQTTProperties* props);
-int MQTTProtocol_handleSubacks(void* pack, SOCKET sock);
-int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props);
-int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock);
-int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock);
+void MQTTProtocol_reconnect(const char *ip_address, Clients *client);
+
+int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
+                         MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);
+
+int MQTTProtocol_handlePingresps(void *pack, SOCKET sock);
+
+int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
+                           MQTTProperties *props);
+
+int MQTTProtocol_handleSubacks(void *pack, SOCKET sock);
+
+int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTProperties *props);
+
+int MQTTProtocol_handleUnsubacks(void *pack, SOCKET sock);
+
+int MQTTProtocol_handleDisconnects(void *pack, SOCKET sock);
 
 #endif

@@ -1946,8 +1946,7 @@ void MQTTClient_yield(void) {
         elapsed = MQTTTime_elapsed(start);
     } while (elapsed < timeout);
     exit:
-    return; //todo
-//    FUNC_EXIT;
+    return;
 }
 
 

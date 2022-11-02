@@ -20,18 +20,12 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-
-#define INVALID_SOCKET SOCKET_ERROR
 #include <sys/socket.h>
-#if !defined(_WRS_KERNEL)
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/select.h>
 #include <poll.h>
 #include <sys/uio.h>
-#else
-#include <selectLib.h>
-#endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -43,6 +37,7 @@
 #include <unistd.h>
 #define ULONG size_t
 #define SOCKET int
+#define INVALID_SOCKET SOCKET_ERROR
 
 #include "TypeDefine.h" /* Needed for mutex_type */
 
@@ -115,12 +110,9 @@ int Socket_getch(SOCKET socket, char* c);
 char *Socket_getdata(SOCKET socket, size_t bytes, size_t* actual_len, int* rc);
 int Socket_putdatas(SOCKET socket, char* buf0, size_t buf0len, PacketBuffers bufs);
 int Socket_close(SOCKET socket);
-#if defined(__GNUC__) && defined(__linux__)
 /* able to use GNU's getaddrinfo_a to make timeouts possible */
 int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* socket, long timeout);
-#else
-int Socket_new(const char* addr, size_t addr_len, int port, SOCKET* socket);
-#endif
+
 
 int Socket_noPendingWrites(SOCKET socket);
 char* Socket_getpeer(SOCKET sock);

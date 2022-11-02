@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(mqtt_lite C)
+project(mqtt_client C)
 
 set(CMAKE_C_STANDARD 99)
 
@@ -17,7 +17,7 @@ IF (PAHO_HIGH_PERFORMANCE)
 ENDIF ()
 
 IF (NOT MQTT_DEV)
-    #paho源码，不包括openssl和MQTTAsync
+    #paho源码，不包括openssl
     add_subdirectory(src)
 ELSE ()
     #正在开发的代码
