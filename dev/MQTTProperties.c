@@ -308,7 +308,6 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCod
 	return rc;
 }
 
-
 int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid)
 {
 	return MQTTProperties_getNumericValueAt(props, propid, 0);

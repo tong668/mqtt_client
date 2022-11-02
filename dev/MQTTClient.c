@@ -511,7 +511,6 @@ static int MQTTClient_cleanSession(Clients *client) {
     return rc;
 }
 
-
 void Protocol_processPublication(Publish *publish, Clients *client, int allocatePayload) {
     qEntry *qe = NULL;
     MQTTClient_message *mm = NULL;
