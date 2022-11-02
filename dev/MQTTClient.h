@@ -15,45 +15,6 @@
 #include "MQTTProperties.h"
 
 
-#define MQTTCLIENT_SUCCESS 0
-
-#define MQTTCLIENT_FAILURE -1
-
-
-#define MQTTCLIENT_DISCONNECTED -3
-
-#define MQTTCLIENT_MAX_MESSAGES_INFLIGHT -4
-
-#define MQTTCLIENT_BAD_UTF8_STRING -5
-
-#define MQTTCLIENT_NULL_PARAMETER -6
-
-#define MQTTCLIENT_TOPICNAME_TRUNCATED -7
-
-#define MQTTCLIENT_BAD_STRUCTURE -8
-
-#define MQTTCLIENT_BAD_QOS -9
-
-#define MQTTCLIENT_SSL_NOT_SUPPORTED -10
-
- #define MQTTCLIENT_BAD_MQTT_VERSION -11
-
-#define MQTTCLIENT_BAD_PROTOCOL -14
-
- #define MQTTCLIENT_BAD_MQTT_OPTION -15
-
- #define MQTTCLIENT_WRONG_MQTT_VERSION -16
-
- #define MQTTCLIENT_0_LEN_WILL_TOPIC -17
-
-#define MQTTVERSION_3_1_1 4
-
-#define MQTT_BAD_SUBSCRIBE 0x80
-
-typedef void* MQTTClient;
-
-typedef int MQTTClient_deliveryToken;
-
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTM. */
@@ -101,40 +62,11 @@ typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTPr
 LIBMQTT_API int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context);
 
-typedef struct
-{
-	/** The eyecatcher for this structure.  must be MQCO. */
-	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
-	int struct_version;
-
-	int MQTTVersion;
-} MQTTClient_createOptions;
 
 LIBMQTT_API int MQTTClient_createWithOptions(MQTTClient* handle, const char* serverURI, const char* clientId,
 		int persistence_type, void* persistence_context, MQTTClient_createOptions* options);
 
-typedef struct
-{
-	char struct_id[4];
-	int struct_version;
-	const char* topicName;
-	const char* message;
-	int retained;
-	int qos;
-	struct
-	{
-		int len;            /**< binary payload length */
-		const void* data;  /**< binary payload data */
-	} payload;
-} MQTTClient_willOptions;
 
-
-typedef struct
-{
-	const char* name;
-	const char* value;
-} MQTTClient_nameValue;
 
 
 LIBMQTT_API MQTTClient_nameValue* MQTTClient_getVersionInfo(void);

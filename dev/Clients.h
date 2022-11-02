@@ -8,18 +8,6 @@
 #include "LinkedList.h"
 #include "Socket.h"
 
-/**
- * Stored publication data to minimize copying
- */
-typedef struct
-{
-	char *topic;
-	int topiclen;
-	char* payload;
-	int payloadlen;
-	int refcount;
-	uint8_t mask[4];
-} Publications;
 
 /**
  * Client publication message data
@@ -37,17 +25,6 @@ typedef struct
 	int len;				/**> length of the whole structure+data */
 } Messages;
 
-/**
- * Client will message data
- */
-typedef struct
-{
-	char *topic;
-	int payloadlen;
-	void *payload;
-	int retained;
-	int qos;
-} willMessages;
 
 typedef struct
 {

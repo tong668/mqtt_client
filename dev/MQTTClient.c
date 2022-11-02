@@ -24,7 +24,6 @@
 #define URI_WS "ws://"
 #define URI_WSS "wss://"
 
-#include "VersionInfo.h"
 #include "WebSocket.h"
 
 static ClientStates ClientState =
