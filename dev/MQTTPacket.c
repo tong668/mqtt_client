@@ -533,16 +533,6 @@ void writeInt4(char** pptr, int anInt)
 	**pptr = (char)(anInt % 256);
 	(*pptr)++;
 }
-
-int readInt4(char** pptr)
-{
-	unsigned char* ptr = (unsigned char*)*pptr;
-	int value = 16777216*(*ptr) + 65536*(*(ptr+1)) + 256*(*(ptr+2)) + (*(ptr+3));
-	*pptr += 4;
-	return value;
-}
-
-
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring)
 {
   writeInt(pptr, lenstring.len);
@@ -550,24 +540,6 @@ void writeMQTTLenString(char** pptr, MQTTLenString lenstring)
   *pptr += lenstring.len;
 }
 
-
-int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata)
-{
-	int len = -1;
-
-	/* the first two bytes are the length of the string */
-	if (enddata - (*pptr) > 1) /* enough length to read the integer? */
-	{
-		lenstring->len = readInt(pptr); /* increments pptr to point past length */
-		if (&(*pptr)[lenstring->len] <= enddata)
-		{
-			lenstring->data = (char*)*pptr;
-			*pptr += lenstring->len;
-			len = 2 + lenstring->len;
-		}
-	}
-	return len;
-}
 
 int MQTTPacket_VBIlen(int rem_len)
 {
@@ -582,51 +554,5 @@ int MQTTPacket_VBIlen(int rem_len)
 	else
 		rc = 4;
   return rc;
-}
-
-
-int MQTTPacket_VBIdecode(int (*getcharfn)(char*, int), unsigned int* value)
-{
-	char c;
-	int multiplier = 1;
-	int len = 0;
-#define MAX_NO_OF_REMAINING_LENGTH_BYTES 4
-
-	*value = 0;
-	do
-	{
-		int rc = MQTTPACKET_READ_ERROR;
-
-		if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES)
-		{
-			rc = MQTTPACKET_READ_ERROR;	/* bad data */
-			goto exit;
-		}
-		rc = (*getcharfn)(&c, 1);
-		if (rc != 1)
-			goto exit;
-		*value += (c & 127) * multiplier;
-		multiplier *= 128;
-	} while ((c & 128) != 0);
-exit:
-	return len;
-}
-
-
-static char* bufptr;
-
-int bufchar(char* c, int count)
-{
-	int i;
-
-	for (i = 0; i < count; ++i)
-		*c = *bufptr++;
-	return count;
-}
-
-int MQTTPacket_decodeBuf(char* buf, unsigned int* value)
-{
-	bufptr = buf;
-	return MQTTPacket_VBIdecode(bufchar, value);
 }
 

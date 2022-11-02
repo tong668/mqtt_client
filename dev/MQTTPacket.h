@@ -12,13 +12,13 @@ typedef void* (*pf)(int, unsigned char, char*, size_t);
 
 #include "MQTTProperties.h"
 
-enum errors
-{
-	MQTTPACKET_BAD = -4,
-	MQTTPACKET_BUFFER_TOO_SHORT = -2,
-	MQTTPACKET_READ_ERROR = -1,
-	MQTTPACKET_READ_COMPLETE
-};
+//enum errors
+//{
+//	MQTTPACKET_BAD = -4,
+//	MQTTPACKET_BUFFER_TOO_SHORT = -2,
+//	MQTTPACKET_READ_ERROR = -1,
+//	MQTTPACKET_READ_COMPLETE
+//};
 
 
 enum msgTypes
@@ -198,11 +198,8 @@ int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* 
 int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID);
 
 void writeInt4(char** pptr, int anInt);
-int readInt4(char** pptr);
 void writeMQTTLenString(char** pptr, MQTTLenString lenstring);
-int MQTTLenStringRead(MQTTLenString* lenstring, char** pptr, char* enddata);
 int MQTTPacket_VBIlen(int rem_len);
-int MQTTPacket_decodeBuf(char* buf, unsigned int* value);
 
 #include "MQTTPacketOut.h"
 
