@@ -22,14 +22,14 @@
 /**
  * List of the predefined MQTT v3/v5 packet names.
  */
-static const char *packet_names[] =
-{
-	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
-	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
-	"PINGREQ", "PINGRESP", "DISCONNECT", "AUTH"
-};
+//static const char *packet_names[] =
+//{
+//	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
+//	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
+//	"PINGREQ", "PINGRESP", "DISCONNECT", "AUTH"
+//};
 
-const char** MQTTClient_packet_names = packet_names;
+//const char** MQTTClient_packet_names = packet_names;
 
 
 /**
@@ -37,10 +37,10 @@ const char** MQTTClient_packet_names = packet_names;
  * @param ptype packet code
  * @return the corresponding string, or "UNKNOWN"
  */
-const char* MQTTPacket_name(int ptype)
-{
-	return (ptype >= 0 && ptype <= AUTH) ? packet_names[ptype] : "UNKNOWN";
-}
+//const char* MQTTPacket_name(int ptype)
+//{
+//	return (ptype >= 0 && ptype <= AUTH) ? packet_names[ptype] : "UNKNOWN";
+//}
 
 /**
  * Array of functions to build packets, indexed according to packet code
@@ -330,11 +330,11 @@ exit:
  * @return an allocated C string holding the characters read, or NULL if the length read would
  * have caused an overrun.
  */
-char* readUTF(char** pptr, char* enddata)
-{
-	int len;
-	return readUTFlen(pptr, enddata, &len);
-}
+//char* readUTF(char** pptr, char* enddata)
+//{
+//	int len;
+//	return readUTFlen(pptr, enddata, &len);
+//}
 
 
 /**

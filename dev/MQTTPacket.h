@@ -29,9 +29,6 @@ enum msgTypes
 };
 
 #include <endian.h>
-#if __BYTE_ORDER == __BIG_ENDIAN
-	#define REVERSED 1
-#endif
 
 /**
  * Bitfields for the MQTT header byte.
@@ -39,15 +36,7 @@ enum msgTypes
 typedef union
 {
 	/*unsigned*/ char byte;	/**< the whole byte */
-#if defined(REVERSED)
-	struct
-	{
-		unsigned int type : 4;	/**< message type nibble */
-		bool dup : 1;			/**< DUP flag bit */
-		unsigned int qos : 2;	/**< QoS value, 0, 1 or 2 */
-		bool retain : 1;		/**< retained flag bit */
-	} bits;
-#else
+
 	struct
 	{
 		bool retain : 1;		/**< retained flag bit */
@@ -55,7 +44,7 @@ typedef union
 		bool dup : 1;			/**< DUP flag bit */
 		unsigned int type : 4;	/**< message type nibble */
 	} bits;
-#endif
+
 } Header;
 
 
@@ -68,18 +57,6 @@ typedef struct
 	union
 	{
 		unsigned char all;	/**< all connect flags */
-#if defined(REVERSED)
-		struct
-		{
-			bool username : 1;			/**< 3.1 user name */
-			bool password : 1; 			/**< 3.1 password */
-			bool willRetain : 1;		/**< will retain setting */
-			unsigned int willQoS : 2;	/**< will QoS value */
-			bool will : 1;			/**< will flag */
-			bool cleanstart : 1;	/**< cleansession flag */
-			int : 1;	/**< unused */
-		} bits;
-#else
 		struct
 		{
 			int : 1;	/**< unused */
@@ -90,7 +67,6 @@ typedef struct
 			bool password : 1; 			/**< 3.1 password */
 			bool username : 1;			/**< 3.1 user name */
 		} bits;
-#endif
 	} flags;	/**< connect flags byte */
 
 	char *Protocol, /**< MQTT protocol name */
@@ -112,19 +88,11 @@ typedef struct
 	union
 	{
 		unsigned char all;	/**< all connack flags */
-#if defined(REVERSED)
-		struct
-		{
-			unsigned int reserved : 7;	/**< message type nibble */
-			bool sessionPresent : 1;    /**< was a session found on the server? */
-		} bits;
-#else
 		struct
 		{
 			bool sessionPresent : 1;    /**< was a session found on the server? */
 			unsigned int reserved : 7;	/**< message type nibble */
 		} bits;
-#endif
 	} flags;	 /**< connack flags byte */
 	unsigned char rc; /**< connack reason code */
 	unsigned int MQTTVersion;  /**< the version of MQTT */

@@ -139,50 +139,6 @@ typedef struct
 
 typedef struct
 {
-	/** The eyecatcher for this structure.  Must be MQTS */
-	char struct_id[4];
-
-	int struct_version;
-
-	/** The file in PEM format containing the public digital certificates trusted by the client. */
-	const char* trustStore;
-
-	const char* keyStore;
-
-	const char* privateKey;
-
-	/** The password to load the client's privateKey if encrypted. */
-	const char* privateKeyPassword;
-
-	const char* enabledCipherSuites;
-
-    /** True/False option to enable verification of the server certificate **/
-    int enableServerCertAuth;
-
-    int sslVersion;
-
-    int verify;
-
-	const char* CApath;
-
-    int (*ssl_error_cb) (const char *str, size_t len, void *u);
-
-    void* ssl_error_context;
-
-	unsigned int (*ssl_psk_cb) (const char *hint, char *identity, unsigned int max_identity_len, unsigned char *psk, unsigned int max_psk_len, void *u);
-
-	void* ssl_psk_context;
-
-	int disableDefaultTrustStore;
-
-	const unsigned char *protos;
-
-	unsigned int protos_len;
-} MQTTClient_SSLOptions;
-
-
-typedef struct
-{
 	const char* name;
 	const char* value;
 } MQTTClient_nameValue;
@@ -204,7 +160,6 @@ typedef struct
 	const char* password;
 	int connectTimeout;
 	int retryInterval;
-	MQTTClient_SSLOptions* ssl;
 	int serverURIcount;
 	char* const* serverURIs;
 	int MQTTVersion;
@@ -259,9 +214,6 @@ LIBMQTT_API int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
 LIBMQTT_API int MQTTClient_isConnected(MQTTClient handle);
 
-
-/* Subscribe is synchronous.  QoS list parameter is changed on return to granted QoSs.
-   Returns return code, MQTTCLIENT_SUCCESS == success, non-zero some sort of error (TBD) */
 
 LIBMQTT_API int MQTTClient_subscribe(MQTTClient handle, const char* topic, int qos);
 
