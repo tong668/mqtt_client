@@ -18,10 +18,7 @@ ENDIF ()
 #取消离线消息持久化
 add_definitions(-DNO_PERSISTENCE=1)
 
-#修改后的paho源码
 add_subdirectory(dev)
-
-#sample和单元测试
 add_subdirectory(sample)
 
 
