@@ -12,7 +12,6 @@
 
 #include "MQTTProtocolOut.h"
 #include "WebSocket.h"
-#include "Proxy.h"
 #include "Base64.h"
 
 extern ClientStates* bstate;
@@ -222,7 +221,7 @@ int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket
 
 		if (aClient->net.http_proxy) {
 			aClient->connect_state = PROXY_CONNECT_IN_PROGRESS;
-			rc = Proxy_connect( &aClient->net, 0, ip_address);
+//			rc = Proxy_connect( &aClient->net, 0, ip_address);
 		}
 		if ( websocket )
 		{

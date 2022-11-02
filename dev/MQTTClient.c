@@ -26,7 +26,6 @@
 
 #include "VersionInfo.h"
 #include "WebSocket.h"
-#include "Proxy.h"
 
 static ClientStates ClientState =
         {
@@ -688,8 +687,8 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
         else {
             if (m->c->net.http_proxy) {
                 m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-                if ((rc = Proxy_connect(&m->c->net, 0, serverURI)) == SOCKET_ERROR)
-                    goto exit;
+//                if ((rc = Proxy_connect(&m->c->net, 0, serverURI)) == SOCKET_ERROR)
+//                    goto exit;
             }
 
             if (m->websocket) {
