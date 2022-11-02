@@ -280,49 +280,49 @@ int MQTTProperty_read(MQTTProperty* prop, char** pptr, char* enddata)
 }
 
 
-int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
-{
-  int rc = 0;
-  unsigned int remlength = 0;
-
-  /* we assume an initialized properties structure */
-  if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
-  {
-    int proplen = 0;
-
-    *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
-    properties->length = remlength;
-    while (remlength > 0)
-    {
-      if (properties->count == properties->max_count)
-      {
-    	properties->max_count += 10;
-    	if (properties->max_count == 10)
-    	  properties->array = malloc(sizeof(MQTTProperty) * properties->max_count);
-    	else
-    	  properties->array = realloc(properties->array, sizeof(MQTTProperty) * properties->max_count);
-      }
-      if (properties->array == NULL)
-      {
-    	rc = PAHO_MEMORY_ERROR;
-        goto exit;
-      }
-      if ((proplen = MQTTProperty_read(&properties->array[properties->count], pptr, enddata)) > 0)
-          remlength -= proplen;
-      else
-          break;
-      properties->count++;
-    }
-    if (remlength == 0)
-        rc = 1; /* data read successfully */
-  }
-
-  if (rc != 1 && properties->array != NULL)
-      MQTTProperties_free(properties);
-
-exit:
-  return rc;
-}
+//int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata)
+//{
+//  int rc = 0;
+//  unsigned int remlength = 0;
+//
+//  /* we assume an initialized properties structure */
+//  if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
+//  {
+//    int proplen = 0;
+//
+//    *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
+//    properties->length = remlength;
+//    while (remlength > 0)
+//    {
+//      if (properties->count == properties->max_count)
+//      {
+//    	properties->max_count += 10;
+//    	if (properties->max_count == 10)
+//    	  properties->array = malloc(sizeof(MQTTProperty) * properties->max_count);
+//    	else
+//    	  properties->array = realloc(properties->array, sizeof(MQTTProperty) * properties->max_count);
+//      }
+//      if (properties->array == NULL)
+//      {
+//    	rc = PAHO_MEMORY_ERROR;
+//        goto exit;
+//      }
+//      if ((proplen = MQTTProperty_read(&properties->array[properties->count], pptr, enddata)) > 0)
+//          remlength -= proplen;
+//      else
+//          break;
+//      properties->count++;
+//    }
+//    if (remlength == 0)
+//        rc = 1; /* data read successfully */
+//  }
+//
+//  if (rc != 1 && properties->array != NULL)
+//      MQTTProperties_free(properties);
+//
+//exit:
+//  return rc;
+//}
 
 
 void MQTTProperties_free(MQTTProperties* props)

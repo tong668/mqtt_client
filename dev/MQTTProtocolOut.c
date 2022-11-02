@@ -16,15 +16,6 @@
 
 extern ClientStates* bstate;
 
-
-
-/**
- * Separates an address:port into two separate values
- * @param[in] uri the input string - hostname:port
- * @param[out] port the returned port integer
- * @param[out] topic optional topic portion of the address starting with '/'
- * @return the address string
- */
 size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, int default_port)
 {
 	char* buf = (char*)uri;
@@ -72,14 +63,6 @@ size_t MQTTProtocol_addressPort(const char* uri, int* port, const char **topic, 
 }
 
 
-/**
- * Allow user or password characters to be expressed in the form of %XX, XX being the
- * hexadecimal value of the character. This will avoid problems when a user code or a password
- * contains a '@' or another special character ('%' included)
- * @param p0 output string
- * @param p1 input string
- * @param basic_auth_in_len
- */
 void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len)
 {
 	while (*p1 != '@')
@@ -105,11 +88,6 @@ void MQTTProtocol_specialChars(char* p0, char* p1, b64_size_t *basic_auth_in_len
 }
 
 
-/*
- * Examples of proxy settings:
- *   http://your.proxy.server:8080/
- *   http://user:pass@my.proxy.server:8080/
- */
 int MQTTProtocol_setHTTPProxy(Clients* aClient, char* source, char** dest, char** auth_dest, char* prefix)
 {
 	b64_size_t basic_auth_in_len, basic_auth_out_len;
@@ -160,16 +138,6 @@ exit:
 	return rc;
 }
 
-
-/**
- * MQTT outgoing connect processing for a client
- * @param ip_address the TCP address:port to connect to
- * @param aClient a structure with all MQTT data needed
- * @param int ssl
- * @param int MQTTVersion the MQTT version to connect with (3 or 4)
- * @param long timeout how long to wait for a new socket to be created
- * @return return code
- */
 
 int MQTTProtocol_connect(const char* ip_address, Clients* aClient, int websocket, int MQTTVersion,
 		MQTTProperties* connectProperties, MQTTProperties* willProperties, long timeout)
@@ -244,12 +212,6 @@ exit:
 }
 
 
-/**
- * Process an incoming pingresp packet for a socket
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handlePingresps(void* pack, SOCKET sock)
 {
 	Clients* client = NULL;
@@ -262,15 +224,6 @@ int MQTTProtocol_handlePingresps(void* pack, SOCKET sock)
 }
 
 
-/**
- * MQTT outgoing subscribe processing for a client
- * @param client the client structure
- * @param topics list of topics
- * @param qoss corresponding list of QoSs
- * @param opts MQTT 5.0 subscribe options
- * @param props MQTT 5.0 subscribe properties
- * @return completion code
- */
 int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 		MQTTSubscribe_options* opts, MQTTProperties* props)
 {
@@ -280,12 +233,6 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
 }
 
 
-/**
- * Process an incoming suback packet for a socket
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 {
 	Suback* suback = (Suback*)pack;
@@ -298,13 +245,6 @@ int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
 	return rc;
 }
 
-
-/**
- * MQTT outgoing unsubscribe processing for a client
- * @param client the client structure
- * @param topics list of topics
- * @return completion code
- */
 int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props)
 {
 	int rc = 0;
@@ -312,13 +252,6 @@ int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTPrope
 	return rc;
 }
 
-
-/**
- * Process an incoming unsuback packet for a socket
- * @param pack pointer to the publish packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
 int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
 {
 	Unsuback* unsuback = (Unsuback*)pack;
@@ -327,24 +260,6 @@ int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
 	MQTTPacket_freeUnsuback(unsuback);
-	return rc;
-}
-
-
-/**
- * Process an incoming disconnect packet for a socket
- * @param pack pointer to the disconnect packet
- * @param sock the socket on which the packet was received
- * @return completion code
- */
-int MQTTProtocol_handleDisconnects(void* pack, SOCKET sock)
-{
-	Ack* disconnect = (Ack*)pack;
-	Clients* client = NULL;
-	int rc = TCPSOCKET_COMPLETE;
-	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
-	Log(LOG_PROTOCOL, 30, NULL, sock, client->clientID, disconnect->rc);
-	MQTTPacket_freeAck(disconnect);
 	return rc;
 }
 

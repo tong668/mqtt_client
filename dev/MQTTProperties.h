@@ -48,16 +48,10 @@ enum MQTTPropertyTypes {
   MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR
 };
 
-/**
- * Returns the MQTT V5 type code of an MQTT V5 property.
- * @param value an MQTT V5 property code.
- * @return the MQTT V5 type code of the input property. -1 if the code was not found.
- */
+
 LIBMQTT_API int MQTTProperty_getType(enum MQTTPropertyCodes value);
 
-/**
- * The data for a length delimited string
- */
+
 typedef struct
 {
 	int len; /**< the length of the string */
@@ -65,9 +59,6 @@ typedef struct
 } MQTTLenString;
 
 
-/**
- * Structure to hold an MQTT version 5 property of any type
- */
 typedef struct
 {
   enum MQTTPropertyCodes identifier; /**<  The MQTT V5 property id. A multi-byte integer. */
@@ -96,75 +87,30 @@ typedef struct MQTTProperties
 
 #define MQTTProperties_initializer {0, 0, 0, NULL}
 
-/**
- * Returns the length of the properties structure when serialized ready for network transmission.
- * @param props an MQTT V5 property structure.
- * @return the length in bytes of the properties when serialized.
- */
+
 int MQTTProperties_len(MQTTProperties* props);
 
-/**
- * Add a property pointer to the property array.  There is no memory allocation.
- * @param props The property list to add the property to.
- * @param prop The property to add to the list.
- * @return 0 on success, -1 on failure.
- */
+
 LIBMQTT_API int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop);
 
-/**
- * Serialize the given property list to a character buffer, e.g. for writing to the network.
- * @param pptr pointer to the buffer - move the pointer as we add data
- * @param properties pointer to the property list, can be NULL
- * @return whether the write succeeded or not: number of bytes written, or < 0 on failure.
- */
+
 int MQTTProperties_write(char** pptr, const MQTTProperties* properties);
 
-/**
- * Reads a property list from a character buffer into an array.
- * @param properties pointer to the property list to be filled. Should be initalized but empty.
- * @param pptr pointer to the character buffer.
- * @param enddata pointer to the end of the character buffer so we don't read beyond.
- * @return 1 if the properties were read successfully.
- */
+
 int MQTTProperties_read(MQTTProperties* properties, char** pptr, char* enddata);
 
-/**
- * Free all memory allocated to the property list, including any to individual properties.
- * @param properties pointer to the property list.
- */
+
 LIBMQTT_API void MQTTProperties_free(MQTTProperties* properties);
 
-/**
- * Copy the contents of a property list, allocating additional memory if needed.
- * @param props pointer to the property list.
- * @return the duplicated property list.
- */
+
 LIBMQTT_API MQTTProperties MQTTProperties_copy(const MQTTProperties* props);
 
-/**
- * Checks if property list contains a specific property.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @return 1 if found, 0 if not.
- */
+
 LIBMQTT_API int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
-/**
- * Returns the integer value of a specific property.  The property given must be a numeric type.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @return the integer value of the property. -9999999 on failure.
- */
 LIBMQTT_API int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
-/**
- * Returns the integer value of a specific property when it's not the only instance.
- * The property given must be a numeric type.
- * @param props pointer to the property list.
- * @param propid the property id to check for.
- * @param index the instance number, starting at 0.
- * @return the integer value of the property. -9999999 on failure.
- */
+
 LIBMQTT_API int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
 

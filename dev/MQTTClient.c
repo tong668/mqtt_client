@@ -327,18 +327,6 @@ void MQTTClient_free(void *memory) {
     free(memory);
 }
 
-//static int
-//MQTTClient_deliverMessage(int rc, MQTTClients *m, char **topicName, int *topicLen, MQTTClient_message **message) {
-//    qEntry *qe = (qEntry *) (m->c->messageQueue->first->content);
-//    *message = qe->msg;
-//    *topicName = qe->topicName;
-//    *topicLen = qe->topicLen;
-//    if (strlen(*topicName) != *topicLen)
-//        rc = MQTTCLIENT_TOPICNAME_TRUNCATED;
-//    ListRemove(m->c->messageQueue, m->c->messageQueue->first->content);
-//    return rc;
-//}
-
 
 /**
  * List callback function for comparing clients by socket
@@ -371,15 +359,15 @@ static thread_return_type WINAPI connectionLost_call(void *context) {
  * @param context a pointer to the relevant client
  * @return thread_return_type standard thread return value - not used here
  */
-static thread_return_type WINAPI call_disconnected(void *context) {
-    struct props_rc_parms *pr = (struct props_rc_parms *) context;
-
-    (*(pr->m->disconnected))(pr->m->disconnected_context, pr->properties, pr->reasonCode);
-    MQTTProperties_free(pr->properties);
-    free(pr->properties);
-    free(pr);
-    return 0;
-}
+//static thread_return_type WINAPI call_disconnected(void *context) {
+//    struct props_rc_parms *pr = (struct props_rc_parms *) context;
+//
+//    (*(pr->m->disconnected))(pr->m->disconnected_context, pr->properties, pr->reasonCode);
+//    MQTTProperties_free(pr->properties);
+//    free(pr->properties);
+//    free(pr);
+//    return 0;
+//}
 
 /* This is the thread function that handles the calling of callback functions if set */
 static thread_return_type WINAPI MQTTClient_run(void *n) {

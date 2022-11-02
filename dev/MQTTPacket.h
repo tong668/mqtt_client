@@ -172,14 +172,11 @@ typedef Ack Pubcomp;
 int MQTTPacket_encode(char* buf, size_t length);
 int MQTTPacket_decode(networkHandles* net, size_t* value);
 int readInt(char** pptr);
-char* readUTF(char** pptr, char* enddata);
 unsigned char readChar(char** pptr);
 void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
 void writeUTF(char** pptr, const char* string);
 void writeData(char** pptr, const void* data, int datalen);
-
-const char* MQTTPacket_name(int ptype);
 
 void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error);
 int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int free, int MQTTVersion);

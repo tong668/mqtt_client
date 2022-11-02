@@ -491,16 +491,16 @@ void MQTTPacket_freePublish(Publish* pack)
 }
 
 
-/**
- * Free allocated storage for an ack packet.
- * @param pack pointer to the publish packet structure
- */
-void MQTTPacket_freeAck(Ack* pack)
-{
-//	if (pack->MQTTVersion >= MQTTVERSION_5)
-//		MQTTProperties_free(&pack->properties);
-	free(pack);
-}
+///**
+// * Free allocated storage for an ack packet.
+// * @param pack pointer to the publish packet structure
+// */
+//void MQTTPacket_freeAck(Ack* pack)
+//{
+////	if (pack->MQTTVersion >= MQTTVERSION_5)
+////		MQTTProperties_free(&pack->properties);
+//	free(pack);
+//}
 
 
 /**
