@@ -46,13 +46,13 @@
 
  #define MQTTCLIENT_0_LEN_WILL_TOPIC -17
 
-#define MQTTVERSION_DEFAULT 0
-
-#define MQTTVERSION_3_1 3
+//#define MQTTVERSION_DEFAULT 0
+//
+//#define MQTTVERSION_3_1 3
 
 #define MQTTVERSION_3_1_1 4
 
- #define MQTTVERSION_5 5
+// #define MQTTVERSION_5 5
 
 #define MQTT_BAD_SUBSCRIBE 0x80
 
@@ -193,8 +193,8 @@ typedef struct
 } MQTTClient_connectOptions;
 
 #define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
-
+0, NULL, MQTTVERSION_3_1_1, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+//todo
 LIBMQTT_API int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions* options);
 
 /** MQTT version 5.0 response information */
