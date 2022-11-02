@@ -320,39 +320,39 @@ int MQTTProtocol_handlePublishes(void* pack, SOCKET sock)
 		m->qos = publish->header.bits.qos;
 		m->retain = publish->header.bits.retain;
 		m->MQTTVersion = publish->MQTTVersion;
-		if (m->MQTTVersion >= MQTTVERSION_5)
-			m->properties = MQTTProperties_copy(&publish->properties);
+//		if (m->MQTTVersion >= MQTTVERSION_5)
+//			m->properties = MQTTProperties_copy(&publish->properties);
 		m->nextMessageType = PUBREL;
 		if ((listElem = ListFindItem(client->inboundMsgs, &(m->msgid), messageIDCompare)) != NULL)
 		{   /* discard queued publication with same msgID that the current incoming message */
 			Messages* msg = (Messages*)(listElem->content);
 			MQTTProtocol_removePublication(msg->publish);
-			if (msg->MQTTVersion >= MQTTVERSION_5)
-				MQTTProperties_free(&msg->properties);
+//			if (msg->MQTTVersion >= MQTTVERSION_5)
+//				MQTTProperties_free(&msg->properties);
 			ListInsert(client->inboundMsgs, m, sizeof(Messages) + len, listElem);
 			ListRemove(client->inboundMsgs, msg);
 			already_received = 1;
 		} else
 			ListAppend(client->inboundMsgs, m, sizeof(Messages) + len);
 
-		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
-		{
-			Publish publish1;
-
-			publish1.header.bits.qos = m->qos;
-			publish1.header.bits.retain = m->retain;
-			publish1.msgId = m->msgid;
-			publish1.topic = m->publish->topic;
-			publish1.topiclen = m->publish->topiclen;
-			publish1.payload = m->publish->payload;
-			publish1.payloadlen = m->publish->payloadlen;
-			publish1.MQTTVersion = m->MQTTVersion;
-			publish1.properties = m->properties;
-
-			Protocol_processPublication(&publish1, client, 1);
-			ListRemove(&(state.publications), m->publish);
-			m->publish = NULL;
-		} else
+//		if (m->MQTTVersion >= MQTTVERSION_5 && already_received == 0)
+//		{
+//			Publish publish1;
+//
+//			publish1.header.bits.qos = m->qos;
+//			publish1.header.bits.retain = m->retain;
+//			publish1.msgId = m->msgid;
+//			publish1.topic = m->publish->topic;
+//			publish1.topiclen = m->publish->topiclen;
+//			publish1.payload = m->publish->payload;
+//			publish1.payloadlen = m->publish->payloadlen;
+//			publish1.MQTTVersion = m->MQTTVersion;
+//			publish1.properties = m->properties;
+//
+//			Protocol_processPublication(&publish1, client, 1);
+//			ListRemove(&(state.publications), m->publish);
+//			m->publish = NULL;
+//		} else
 		{	/* allocate and copy payload data as it's needed for pubrel.
 		       For other cases, it's done in Protocol_processPublication */
 			char *temp = m->publish->payload;
@@ -401,13 +401,13 @@ int MQTTProtocol_handlePubacks(void* pack, SOCKET sock)
 		{
 			Log(TRACE_MIN, 6, NULL, "PUBACK", client->clientID, puback->msgId);
 			MQTTProtocol_removePublication(m->publish);
-			if (m->MQTTVersion >= MQTTVERSION_5)
-				MQTTProperties_free(&m->properties);
+//			if (m->MQTTVersion >= MQTTVERSION_5)
+//				MQTTProperties_free(&m->properties);
 			ListRemove(client->outboundMsgs, m);
 		}
 	}
-	if (puback->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&puback->properties);
+//	if (puback->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&puback->properties);
 	free(pack);
 	return rc;
 }
@@ -451,18 +451,18 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 		}
 		else
 		{
-			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
-			{
-				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
-						pubrec->rc, client->clientID, pubrec->msgId);
-				MQTTProtocol_removePublication(m->publish);
-				if (m->MQTTVersion >= MQTTVERSION_5)
-					MQTTProperties_free(&m->properties);
-				ListRemove(client->outboundMsgs, m);
-				(++state.msgs_sent);
-				send_pubrel = 0; /* in MQTT v5, stop the exchange if there is an error reported */
-			}
-			else
+//			if (pubrec->MQTTVersion >= MQTTVERSION_5 && pubrec->rc >= MQTTREASONCODE_UNSPECIFIED_ERROR)
+//			{
+//				Log(TRACE_MIN, -1, "Pubrec error %d received for client %s msgid %d, not sending PUBREL",
+//						pubrec->rc, client->clientID, pubrec->msgId);
+//				MQTTProtocol_removePublication(m->publish);
+//				if (m->MQTTVersion >= MQTTVERSION_5)
+//					MQTTProperties_free(&m->properties);
+//				ListRemove(client->outboundMsgs, m);
+//				(++state.msgs_sent);
+//				send_pubrel = 0; /* in MQTT v5, stop the exchange if there is an error reported */
+//			}
+//			else
 			{
 				m->nextMessageType = PUBCOMP;
 				m->lastTouch = MQTTTime_now();
@@ -476,8 +476,8 @@ int MQTTProtocol_handlePubrecs(void* pack, SOCKET sock)
 	else
 		rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 
-	if (pubrec->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pubrec->properties);
+//	if (pubrec->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pubrec->properties);
 	free(pack);
 	return rc;
 }
@@ -527,12 +527,12 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 				publish.payloadlen = m->publish->payloadlen;
 			}
 			publish.MQTTVersion = m->MQTTVersion;
-			if (publish.MQTTVersion >= MQTTVERSION_5)
-				publish.properties = m->properties;
-			else
+//			if (publish.MQTTVersion >= MQTTVERSION_5)
+//				publish.properties = m->properties;
+//			else
 				Protocol_processPublication(&publish, client, 0); /* only for 3.1.1 and lower */
-			if (m->MQTTVersion >= MQTTVERSION_5)
-				MQTTProperties_free(&m->properties);
+//			if (m->MQTTVersion >= MQTTVERSION_5)
+//				MQTTProperties_free(&m->properties);
 			if (m->publish)
 				ListRemove(&(state.publications), m->publish);
 			ListRemove(client->inboundMsgs, m);
@@ -545,8 +545,8 @@ int MQTTProtocol_handlePubrels(void* pack, SOCKET sock)
 	else
 		rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 
-	if (pubrel->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pubrel->properties);
+//	if (pubrel->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pubrel->properties);
 	free(pack);
 	return rc;
 }
@@ -585,15 +585,15 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
 			{
 				Log(TRACE_MIN, 6, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
 				MQTTProtocol_removePublication(m->publish);
-				if (m->MQTTVersion >= MQTTVERSION_5)
-					MQTTProperties_free(&m->properties);
+//				if (m->MQTTVersion >= MQTTVERSION_5)
+//					MQTTProperties_free(&m->properties);
 				ListRemove(client->outboundMsgs, m);
 				(++state.msgs_sent);
 			}
 		}
 	}
-	if (pubcomp->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pubcomp->properties);
+//	if (pubcomp->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pubcomp->properties);
 	free(pack);
 	return rc;
 }
@@ -841,8 +841,8 @@ void MQTTProtocol_emptyMessageList(List* msgList)
 	{
 		Messages* m = (Messages*)(current->content);
 		MQTTProtocol_removePublication(m->publish);
-		if (m->MQTTVersion >= MQTTVERSION_5)
-			MQTTProperties_free(&m->properties);
+//		if (m->MQTTVersion >= MQTTVERSION_5)
+//			MQTTProperties_free(&m->properties);
 	}
 	ListEmpty(msgList);
 }
