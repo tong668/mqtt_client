@@ -98,7 +98,6 @@
 */
 
 #include "MQTTProperties.h"
-#include "MQTTSubscribeOpts.h"
 #if !defined(NO_PERSISTENCE)
 #include "MQTTClientPersistence.h"
 #endif
