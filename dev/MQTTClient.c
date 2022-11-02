@@ -13,16 +13,11 @@
 #include "MQTTClient.h"
 
 #include "utf-8.h"
-#include "MQTTProtocol.h"
 #include "MQTTProtocolOut.h"
 #include "Thread.h"
 #include "SocketBuffer.h"
 
-#define URI_SSL "ssl://"
 
-#define URI_TCP "tcp://"
-#define URI_WS "ws://"
-#define URI_WSS "wss://"
 
 #include "WebSocket.h"
 
@@ -51,7 +46,6 @@ static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static mutex_type connect_mutex = &connect_mutex_store;
 
-#define WINAPI
 
 static volatile int library_initialized = 0;
 static List *handles = NULL;

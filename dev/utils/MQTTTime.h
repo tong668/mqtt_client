@@ -19,11 +19,7 @@
 
 #include <stdint.h>
 #include <sys/time.h>
-#define START_TIME_TYPE struct timeval
-#define START_TIME_ZERO {0, 0}
-
-#define ELAPSED_TIME_TYPE uint64_t
-#define DIFF_TIME_TYPE int64_t
+#include "TypeDefine.h"
 
 void MQTTTime_sleep(ELAPSED_TIME_TYPE milliseconds);
 START_TIME_TYPE MQTTTime_start_clock(void);

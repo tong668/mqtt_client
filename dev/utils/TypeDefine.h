@@ -14,7 +14,7 @@
 #if !defined(_MUTEX_TYPE_H_)
 #define _MUTEX_TYPE_H_
 
-
+#include "LinkedList.h" //todo
 #include <pthread.h>
 #include <stdlib.h>
 #include <bits/stdint-uintn.h>
@@ -25,6 +25,8 @@
 #define LIBMQTT_API extern
 
 #define mutex_type pthread_mutex_t*
+
+#define SOCKET int
 
 #if defined(HIGH_PERFORMANCE)
 #define NO_HEAP_TRACKING 1
@@ -39,31 +41,27 @@
 #define FUNC_ENTRY
 #define FUNC_EXIT
 #define FUNC_EXIT_RC(x)
-
 #endif
 
-//todo remove
-/**
-  * This <i>persistence_type</i> value specifies the default file system-based
-  * persistence mechanism (see MQTTClient_create()).
-  */
+#define URI_SSL "ssl://"
+
+#define URI_TCP "tcp://"
+#define URI_WS "ws://"
+#define URI_WSS "wss://"
+
+#define WINAPI
+
+
+
 #define MQTTCLIENT_PERSISTENCE_DEFAULT 0
-/**
-  * This <i>persistence_type</i> value specifies a memory-based
-  * persistence mechanism (see MQTTClient_create()).
-  */
+
 #define MQTTCLIENT_PERSISTENCE_NONE 1
-/**
-  * This <i>persistence_type</i> value specifies an application-specific
-  * persistence mechanism (see MQTTClient_create()).
-  */
+
 #define MQTTCLIENT_PERSISTENCE_USER 2
 
-/**
-  * Application-specific persistence functions must return this error code if
-  * there is a problem executing the function.
-  */
 #define MQTTCLIENT_PERSISTENCE_ERROR -2
+
+#define MQTT_INVALID_PROPERTY_ID -2
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {
@@ -112,6 +110,15 @@ enum MQTTPropertyTypes {
     MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING,
     MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR
 };
+
+enum msgTypes
+{
+    CONNECT = 1, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL,
+    PUBCOMP, SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK,
+    PINGREQ, PINGRESP, DISCONNECT, AUTH
+};
+
+
 
 
 /** The MQTT V5 subscribe options, apart from QoS which existed before V5. */
@@ -173,6 +180,67 @@ typedef struct MQTTSubscribe_options
 #define MQTTVERSION_3_1_1 4
 
 #define MQTT_BAD_SUBSCRIBE 0x80
+
+
+#define START_TIME_TYPE struct timeval
+#define START_TIME_ZERO {0, 0}
+
+#define ELAPSED_TIME_TYPE uint64_t
+#define DIFF_TIME_TYPE int64_t
+
+
+
+/* connection states */
+/** no connection in progress, see connected value */
+#define NOT_IN_PROGRESS  0x0
+/** TCP connection in progress */
+#define TCP_IN_PROGRESS  0x1
+/** SSL connection in progress */
+#define SSL_IN_PROGRESS  0x2
+/** Websocket connection in progress */
+#define WEBSOCKET_IN_PROGRESS   0x3
+/** TCP completed, waiting for MQTT ACK */
+#define WAIT_FOR_CONNACK 0x4
+/** Proxy connection in progress */
+#define PROXY_CONNECT_IN_PROGRESS 0x5
+/** Disconnecting */
+#define DISCONNECTING    -2
+
+#if !defined(min)
+#define min(A,B) ( (A) < (B) ? (A):(B))
+#endif
+
+#define MAX_MSG_ID 65535
+
+#define MQTT_DEFAULT_PORT 1883
+#define SECURE_MQTT_DEFAULT_PORT 8883
+#define WS_DEFAULT_PORT 80
+#define WSS_DEFAULT_PORT 443
+#define PROXY_DEFAULT_PORT 8080
+
+
+/**
+ * WebSocket op codes
+ * @{
+ */
+#define WebSocket_OP_CONTINUE 0x0 /* 0000 - continue frame */
+#define WebSocket_OP_TEXT     0x1 /* 0001 - text frame */
+#define WebSocket_OP_BINARY   0x2 /* 0010 - binary frame */
+#define WebSocket_OP_CLOSE    0x8 /* 1000 - close frame */
+#define WebSocket_OP_PING     0x9 /* 1001 - ping frame */
+#define WebSocket_OP_PONG     0xA /* 1010 - pong frame */
+/** @} */
+
+/**
+ * Various close status codes
+ * @{
+ */
+#define WebSocket_CLOSE_NORMAL          1000
+#define WebSocket_CLOSE_GOING_AWAY      1001
+#define WebSocket_CLOSE_TLS_FAIL        1015 /* reserved: not be used */
+/** @} */
+
+
 
 typedef void* MQTTClient;
 
@@ -269,6 +337,293 @@ typedef struct MQTTProperties
     int length;    /**< mbi: byte length of all properties */
     MQTTProperty *array;  /**< array of properties */
 } MQTTProperties;
+
+
+typedef struct
+{
+    /** The eyecatcher for this structure.  must be MQTM. */
+    char struct_id[4];
+    /** The version number of this structure.  Must be 0 or 1
+     *  0 indicates no message properties */
+    int struct_version;
+    /** The length of the MQTT message payload in bytes. */
+    int payloadlen;
+    /** A pointer to the payload of the MQTT message. */
+    void* payload;
+
+    int qos;
+
+    int retained;
+
+    int dup;
+
+    int msgid;
+
+    MQTTProperties properties;
+} MQTTClient_message;
+
+#define MQTTClient_message_initializer { {'M', 'Q', 'T', 'M'}, 1, 0, NULL, 0, 0, 0, 0, MQTTProperties_initializer }
+
+typedef struct
+{
+    /** The eyecatcher for this structure.  must be MQTC. */
+    char struct_id[4];
+    int struct_version;
+    int keepAliveInterval;
+    int cleansession;
+
+    int reliable;
+    MQTTClient_willOptions* will;
+    const char* username;
+    const char* password;
+    int connectTimeout;
+    int retryInterval;
+    int serverURIcount;
+    char* const* serverURIs;
+    int MQTTVersion;
+    struct
+    {
+        const char* serverURI;     /**< the serverURI connected to */
+        int MQTTVersion;     /**< the MQTT version used to connect with */
+        int sessionPresent;  /**< if the MQTT version is 3.1.1, the value of sessionPresent returned in the connack */
+    } returned;
+    struct
+    {
+        int len;           /**< binary password length */
+        const void* data;  /**< binary password data */
+    } binarypwd;
+    int maxInflightMessages;
+    /*
+     * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
+     */
+    int cleanstart;
+    /**
+     * HTTP headers for websockets
+     */
+    const MQTTClient_nameValue* httpHeaders;
+    /**
+     * HTTP proxy
+     */
+    const char* httpProxy;
+    /**
+     * HTTPS proxy
+     */
+    const char* httpsProxy;
+} MQTTClient_connectOptions;
+
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_3_1_1, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+
+/** MQTT version 5.0 response information */
+typedef struct MQTTResponse
+{
+    int version;                        /* the version number of this structure */
+    enum MQTTReasonCodes reasonCode;    /* the MQTT 5.0 reason code returned */
+    int reasonCodeCount;	            /* the number of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+    enum MQTTReasonCodes* reasonCodes;  /* a list of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
+    MQTTProperties* properties;         /* optionally, the MQTT 5.0 properties returned */
+} MQTTResponse;
+
+typedef int MQTTClient_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
+
+
+typedef void MQTTClient_deliveryComplete(void* context, MQTTClient_deliveryToken dt);
+
+
+typedef void MQTTClient_connectionLost(void* context, char* cause);
+
+/**
+ * Client publication message data
+ */
+typedef struct
+{
+    int qos;
+    int retain;
+    int msgid;
+    int MQTTVersion;
+    MQTTProperties properties;
+    Publications *publish;
+    START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
+    char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
+    int len;				/**> length of the whole structure+data */
+} Messages;
+
+
+typedef struct
+{
+    SOCKET socket;
+    START_TIME_TYPE lastSent;
+    START_TIME_TYPE lastReceived;
+    START_TIME_TYPE lastPing;
+    char *http_proxy;
+    char *http_proxy_auth;
+    int websocket; /**< socket has been upgraded to use web sockets */
+    char *websocket_key;
+    const MQTTClient_nameValue* httpHeaders;
+} networkHandles;
+
+
+typedef unsigned int bool;
+typedef void* (*pf)(int, unsigned char, char*, size_t);
+/**
+ * Bitfields for the MQTT header byte.
+ */
+typedef union
+{
+    /*unsigned*/ char byte;	/**< the whole byte */
+
+    struct
+    {
+        bool retain : 1;		/**< retained flag bit */
+        unsigned int qos : 2;	/**< QoS value, 0, 1 or 2 */
+        bool dup : 1;			/**< DUP flag bit */
+        unsigned int type : 4;	/**< message type nibble */
+    } bits;
+
+} Header;
+
+
+/**
+ * Data for a connect packet.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+    union
+    {
+        unsigned char all;	/**< all connect flags */
+        struct
+        {
+            int : 1;	/**< unused */
+            bool cleanstart : 1;	/**< cleansession flag */
+            bool will : 1;			/**< will flag */
+            unsigned int willQoS : 2;	/**< will QoS value */
+            bool willRetain : 1;		/**< will retain setting */
+            bool password : 1; 			/**< 3.1 password */
+            bool username : 1;			/**< 3.1 user name */
+        } bits;
+    } flags;	/**< connect flags byte */
+
+    char *Protocol, /**< MQTT protocol name */
+    *clientID,	/**< string client id */
+    *willTopic,	/**< will topic */
+    *willMsg;	/**< will payload */
+
+    int keepAliveTimer;		/**< keepalive timeout value in seconds */
+    unsigned char version;	/**< MQTT version number */
+} Connect;
+
+
+/**
+ * Data for a connack packet.
+ */
+typedef struct
+{
+    Header header; /**< MQTT header byte */
+    union
+    {
+        unsigned char all;	/**< all connack flags */
+        struct
+        {
+            bool sessionPresent : 1;    /**< was a session found on the server? */
+            unsigned int reserved : 7;	/**< message type nibble */
+        } bits;
+    } flags;	 /**< connack flags byte */
+    unsigned char rc; /**< connack reason code */
+    unsigned int MQTTVersion;  /**< the version of MQTT */
+    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+} Connack;
+
+
+/**
+ * Data for a packet with header only.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+} MQTTPacket;
+
+
+/**
+ * Data for a publish packet.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+    char* topic;	/**< topic string */
+    int topiclen;
+    int msgId;		/**< MQTT message id */
+    char* payload;	/**< binary payload, length delimited */
+    int payloadlen;	/**< payload length */
+    int MQTTVersion;  /**< the version of MQTT */
+    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+    uint8_t mask[4]; /**< the websockets mask the payload is masked with, if any */
+} Publish;
+
+
+/**
+ * Data for one of the ack packets.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+    int msgId;		/**< MQTT message id */
+    unsigned char rc; /**< MQTT 5 reason code */
+    int MQTTVersion;  /**< the version of MQTT */
+    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+} Ack;
+
+typedef Ack Puback;
+typedef Ack Pubrec;
+typedef Ack Pubrel;
+typedef Ack Pubcomp;
+
+/**
+ * Data for a suback packet.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+    int msgId;		/**< MQTT message id */
+    int MQTTVersion;  /**< the version of MQTT */
+    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+    List* qoss;		/**< list of granted QoSs (MQTT 3/4) / reason codes (MQTT 5) */
+} Suback;
+
+
+/**
+ * Data for an MQTT V5 unsuback packet.
+ */
+typedef struct
+{
+    Header header;	/**< MQTT header byte */
+    int msgId;		/**< MQTT message id */
+    int MQTTVersion;  /**< the version of MQTT */
+    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
+    List* reasonCodes;	/**< list of reason codes */
+} Unsuback;
+
+typedef struct
+{
+    SOCKET socket;
+    Publications* p;
+} pending_write;
+
+
+typedef struct
+{
+    List publications;
+    unsigned int msgs_received;
+    unsigned int msgs_sent;
+    List pending_writes; /* for qos 0 writes not complete */
+} MQTTProtocol;
+
+#define MQTTProperties_initializer {0, 0, 0, NULL} //todo
+
+
+
+
+
 
 
 

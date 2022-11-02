@@ -36,7 +36,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #define ULONG size_t
-#define SOCKET int
+
 #define INVALID_SOCKET SOCKET_ERROR
 
 #include "TypeDefine.h" /* Needed for mutex_type */

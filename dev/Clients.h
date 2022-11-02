@@ -10,53 +10,6 @@
 
 
 /**
- * Client publication message data
- */
-typedef struct
-{
-	int qos;
-	int retain;
-	int msgid;
-	int MQTTVersion;
-	MQTTProperties properties;
-	Publications *publish;
-	START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
-	char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
-	int len;				/**> length of the whole structure+data */
-} Messages;
-
-
-typedef struct
-{
-	SOCKET socket;
-	START_TIME_TYPE lastSent;
-	START_TIME_TYPE lastReceived;
-	START_TIME_TYPE lastPing;
-	char *http_proxy;
-	char *http_proxy_auth;
-	int websocket; /**< socket has been upgraded to use web sockets */
-	char *websocket_key;
-	const MQTTClient_nameValue* httpHeaders;
-} networkHandles;
-
-
-/* connection states */
-/** no connection in progress, see connected value */
-#define NOT_IN_PROGRESS  0x0
-/** TCP connection in progress */
-#define TCP_IN_PROGRESS  0x1
-/** SSL connection in progress */
-#define SSL_IN_PROGRESS  0x2
-/** Websocket connection in progress */
-#define WEBSOCKET_IN_PROGRESS   0x3
-/** TCP completed, waiting for MQTT ACK */
-#define WAIT_FOR_CONNACK 0x4
-/** Proxy connection in progress */
-#define PROXY_CONNECT_IN_PROGRESS 0x5
-/** Disconnecting */
-#define DISCONNECTING    -2
-
-/**
  * Data related to one client
  */
 typedef struct

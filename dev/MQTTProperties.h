@@ -4,17 +4,8 @@
 
 #include "utils/TypeDefine.h"
 
-#define MQTT_INVALID_PROPERTY_ID -2
-
-
 
 LIBMQTT_API int MQTTProperty_getType(enum MQTTPropertyCodes value);
-
-
-
-
-
-#define MQTTProperties_initializer {0, 0, 0, NULL}
 
 
 int MQTTProperties_len(MQTTProperties* props);

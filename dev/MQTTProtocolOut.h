@@ -7,14 +7,9 @@
 #include "Clients.h"
 #include "Log.h"
 #include "Messages.h"
-#include "MQTTProtocol.h"
 #include "MQTTProtocolClient.h"
 
-#define MQTT_DEFAULT_PORT 1883
-#define SECURE_MQTT_DEFAULT_PORT 8883
-#define WS_DEFAULT_PORT 80
-#define WSS_DEFAULT_PORT 443
-#define PROXY_DEFAULT_PORT 8080
+
 
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
 

@@ -15,9 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !defined(min)
-#define min(A,B) ( (A) < (B) ? (A):(B))
-#endif
 
 /**
  * Array of functions to build packets, indexed according to packet code

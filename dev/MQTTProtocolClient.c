@@ -15,10 +15,6 @@
 #include "Socket.h"
 #include "SocketBuffer.h"
 
-#if !defined(min)
-#define min(A,B) ( (A) < (B) ? (A):(B))
-#endif
-
 extern MQTTProtocol state;
 extern ClientStates* bstate;
 
