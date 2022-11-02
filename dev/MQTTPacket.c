@@ -87,8 +87,9 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 	else
 	{
 		ptype = header.bits.type;
-		if (ptype < CONNECT || (MQTTVersion < MQTTVERSION_5 && ptype >= DISCONNECT) ||
-				(MQTTVersion >= MQTTVERSION_5 && ptype > AUTH) ||
+		//todo 5
+		if (ptype < CONNECT || (MQTTVersion < 5/*MQTTVERSION_5*/ && ptype >= DISCONNECT) ||
+				(MQTTVersion >= 5/*MQTTVERSION_5*/ && ptype > AUTH) ||
 				new_packets[ptype] == NULL)
 			Log(TRACE_MIN, 2, NULL, ptype);
 		else
@@ -455,20 +456,20 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
 	}
 	else
 		pack->msgId = 0;
-	if (MQTTVersion >= MQTTVERSION_5)
-	{
-		MQTTProperties props = MQTTProperties_initializer;
-		pack->properties = props;
-		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
-		{
-			if (pack->properties.array)
-				free(pack->properties.array);
-			if (pack)
-				free(pack);
-			pack = NULL; /* signal protocol error */
-			goto exit;
-		}
-	}
+//	if (MQTTVersion >= MQTTVERSION_5)
+//	{
+//		MQTTProperties props = MQTTProperties_initializer;
+//		pack->properties = props;
+//		if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+//		{
+//			if (pack->properties.array)
+//				free(pack->properties.array);
+//			if (pack)
+//				free(pack);
+//			pack = NULL; /* signal protocol error */
+//			goto exit;
+//		}
+//	}
 	pack->payload = curdata;
 	pack->payloadlen = (int)(datalen-(curdata-data));
 exit:
@@ -484,8 +485,8 @@ void MQTTPacket_freePublish(Publish* pack)
 {
 	if (pack->topic != NULL)
 		free(pack->topic);
-	if (pack->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pack->properties);
+//	if (pack->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pack->properties);
 	free(pack);
 }
 
@@ -496,8 +497,8 @@ void MQTTPacket_freePublish(Publish* pack)
  */
 void MQTTPacket_freeAck(Ack* pack)
 {
-	if (pack->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pack->properties);
+//	if (pack->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pack->properties);
 	free(pack);
 }
 
@@ -556,8 +557,8 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
  */
 void MQTTPacket_freeSuback(Suback* pack)
 {
-	if (pack->MQTTVersion >= MQTTVERSION_5)
-		MQTTProperties_free(&pack->properties);
+//	if (pack->MQTTVersion >= MQTTVERSION_5)
+//		MQTTProperties_free(&pack->properties);
 	if (pack->qoss != NULL)
 		ListFree(pack->qoss);
 	free(pack);
@@ -570,12 +571,12 @@ void MQTTPacket_freeSuback(Suback* pack)
  */
 void MQTTPacket_freeUnsuback(Unsuback* pack)
 {
-	if (pack->MQTTVersion >= MQTTVERSION_5)
-	{
-		MQTTProperties_free(&pack->properties);
-		if (pack->reasonCodes != NULL)
-			ListFree(pack->reasonCodes);
-	}
+//	if (pack->MQTTVersion >= MQTTVERSION_5)
+//	{
+//		MQTTProperties_free(&pack->properties);
+//		if (pack->reasonCodes != NULL)
+//			ListFree(pack->reasonCodes);
+//	}
 	free(pack);
 }
 
@@ -660,30 +661,30 @@ void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t 
 		}
 		pack->msgId = readInt(&curdata);
 	}
-	if (MQTTVersion >= MQTTVERSION_5)
-	{
-		MQTTProperties props = MQTTProperties_initializer;
-
-		pack->rc = MQTTREASONCODE_SUCCESS;
-		pack->properties = props;
-
-		/* disconnect has no msgid */
-		if (datalen > 2 || (pack->header.bits.type == DISCONNECT && datalen > 0))
-			pack->rc = readChar(&curdata); /* reason code */
-
-		if (datalen > 3 || (pack->header.bits.type == DISCONNECT && datalen > 1))
-		{
-			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
-			{
-				if (pack->properties.array)
-					free(pack->properties.array);
-				if (pack)
-					free(pack);
-				pack = NULL; /* signal protocol error */
-				goto exit;
-			}
-		}
-	}
+//	if (MQTTVersion >= MQTTVERSION_5)
+//	{
+//		MQTTProperties props = MQTTProperties_initializer;
+//
+//		pack->rc = MQTTREASONCODE_SUCCESS;
+//		pack->properties = props;
+//
+//		/* disconnect has no msgid */
+//		if (datalen > 2 || (pack->header.bits.type == DISCONNECT && datalen > 0))
+//			pack->rc = readChar(&curdata); /* reason code */
+//
+//		if (datalen > 3 || (pack->header.bits.type == DISCONNECT && datalen > 1))
+//		{
+//			if (MQTTProperties_read(&pack->properties, &curdata, enddata) != 1)
+//			{
+//				if (pack->properties.array)
+//					free(pack->properties.array);
+//				if (pack)
+//					free(pack);
+//				pack = NULL; /* signal protocol error */
+//				goto exit;
+//			}
+//		}
+//	}
 exit:
 	return pack;
 }
