@@ -22,9 +22,8 @@
 
 
 #include "Messages.h"
+#include "TypeDefine.h"
 #include <string.h>
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 static const char *protocol_message_list[] =
 {
