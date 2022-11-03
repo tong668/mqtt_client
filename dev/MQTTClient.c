@@ -81,9 +81,9 @@ static void MQTTClient_emptyMessageQueue(Clients *client);
 
 static int clientSockCompare(void *a, void *b);
 
-static thread_return_type WINAPI connectionLost_call(void *context);
+static thread_return_type  connectionLost_call(void *context);
 
-static thread_return_type WINAPI MQTTClient_run(void *n);
+static thread_return_type  MQTTClient_run(void *n);
 
 static int MQTTClient_stop(void);
 
@@ -303,7 +303,7 @@ static int clientSockCompare(void *a, void *b) {
     return m->c->net.socket == *(int *) b;
 }
 
-static thread_return_type WINAPI connectionLost_call(void *context) {
+static thread_return_type connectionLost_call(void *context) {
     MQTTClients *m = (MQTTClients *) context;
 
     (*(m->cl))(m->context, NULL);
@@ -311,7 +311,7 @@ static thread_return_type WINAPI connectionLost_call(void *context) {
 }
 
 /* This is the thread function that handles the calling of callback functions if set */
-static thread_return_type WINAPI MQTTClient_run(void *n) {
+static thread_return_type  MQTTClient_run(void *n) {
     long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
     running = 1;

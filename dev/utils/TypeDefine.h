@@ -22,8 +22,6 @@
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
 #define CLIENT_VERSION  "1.3.10"
 
-#define LIBMQTT_API extern
-
 #define mutex_type pthread_mutex_t*
 
 #define SOCKET int
@@ -49,7 +47,7 @@
 #define URI_WS "ws://"
 #define URI_WSS "wss://"
 
-#define WINAPI
+//#define WINAPI
 
 #define MQTTCLIENT_PERSISTENCE_DEFAULT 0
 
