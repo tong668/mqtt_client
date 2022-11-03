@@ -5,6 +5,6 @@
 #include <stdio.h>
 
 int main(){
-    printf("hello mqtt.\n");
+    printf("hello mqtt！\n");
     return 0;
 }
