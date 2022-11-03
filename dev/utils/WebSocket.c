@@ -215,7 +215,8 @@ int WebSocket_connect(networkHandles *net, int ssl, const char *uri) {
 
     uuid_generate(uuid);
     Base64_encode(net->websocket_key, 25u, uuid, sizeof(uuid_t));
-    hostname_len = MQTTProtocol_addressPort(uri, &port, &topic, ssl ? WSS_DEFAULT_PORT : WS_DEFAULT_PORT);
+    //todo 确认
+//    hostname_len = MQTTProtocol_addressPort(uri, &port, &topic, ssl ? WSS_DEFAULT_PORT : WS_DEFAULT_PORT);
 
     /* if no topic, use default */
     if (!topic)

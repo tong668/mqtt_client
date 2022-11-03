@@ -2,7 +2,8 @@
 #if !defined(WEBSOCKET_H)
 #define WEBSOCKET_H
 
-#include "MQTTPacket.h"
+//#include "MQTTPacket.h"
+#include "Socket.h"
 
 /* closes a websocket connection */
 void WebSocket_close(networkHandles *net, int status_code, const char *reason);
