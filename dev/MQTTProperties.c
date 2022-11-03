@@ -254,22 +254,6 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 }
 
 
-int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid)
-{
-    int i = 0;
-    int found = 0;
-
-    for (i = 0; i < props->count; ++i)
-    {
-        if (propid == props->array[i].identifier)
-        {
-            found = 1;
-            break;
-        }
-    }
-    return found;
-}
-
 int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index)
 {
     int i = 0;
@@ -309,9 +293,5 @@ int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCod
     return rc;
 }
 
-int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid)
-{
-    return MQTTProperties_getNumericValueAt(props, propid, 0);
-}
 
 
