@@ -19,6 +19,9 @@ extern void MQTTProperties_free(MQTTProperties *properties);
 
 extern MQTTProperties MQTTProperties_copy(const MQTTProperties *props);
 
+extern int MQTTProperties_hasProperty(MQTTProperties *props, enum MQTTPropertyCodes propid);
+
+extern int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTPropertyCodes propid);
 
 extern int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
