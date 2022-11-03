@@ -9,7 +9,7 @@
 #include "Log.h"
 #include "SHA1.h"
 #include "LinkedList.h"
-#include "MQTTProtocolOut.h"
+//#include "MQTTProtocolOut.h"
 #include "SocketBuffer.h"
 
 #  include <endian.h>

@@ -14,10 +14,11 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#if !defined(UTF8_H)
-#define UTF8_H
+#if !defined(MESSAGES_H)
+#define MESSAGES_H
 
-int UTF8_validate(int len, const char *data);
-int UTF8_validateString(const char* string);
+#include "Log.h"
+
+const char* Messages_get(int, enum LOG_LEVELS);
 
 #endif
