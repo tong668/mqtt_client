@@ -18,8 +18,7 @@ int main(int argc, char* argv[])
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
     int rc;
-    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
-                                MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
         exit(EXIT_FAILURE);

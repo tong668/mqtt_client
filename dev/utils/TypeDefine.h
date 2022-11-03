@@ -44,14 +44,6 @@
 #define URI_WS "ws://"
 #define URI_WSS "wss://"
 
-#define MQTTCLIENT_PERSISTENCE_DEFAULT 0
-
-#define MQTTCLIENT_PERSISTENCE_NONE 1
-
-#define MQTTCLIENT_PERSISTENCE_USER 2
-
-#define MQTTCLIENT_PERSISTENCE_ERROR -2
-
 #define MQTT_INVALID_PROPERTY_ID -2
 
 /** The MQTT V5 one byte reason code */

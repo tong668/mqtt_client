@@ -17,11 +17,9 @@ extern "C" {
 extern int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connectionLost *cl,
                                         MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc);
 
-extern int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                  int persistence_type, void *persistence_context);
+extern int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId);
 
 extern int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                             int persistence_type, void *persistence_context,
                                              MQTTClient_createOptions *options);
 
 

@@ -41,8 +41,7 @@ int main(int argc, char* argv[])
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     int rc;
 
-    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
-                                MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
         rc = EXIT_FAILURE;

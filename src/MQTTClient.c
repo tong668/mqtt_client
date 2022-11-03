@@ -116,8 +116,7 @@ static void MQTTProtocol_checkPendingWrites(void);
 static void MQTTClient_writeComplete(SOCKET socket, int rc);
 
 
-int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                 int persistence_type, void *persistence_context, MQTTClient_createOptions *options) {
+int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,MQTTClient_createOptions *options) {
     int rc = 0;
     MQTTClients *m = NULL;
     if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
@@ -130,11 +129,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
 
     if (!UTF8_validateString(clientId)) {
         rc = MQTTCLIENT_BAD_UTF8_STRING;
-        goto exit;
-    }
-
-    if (strlen(clientId) == 0 && persistence_type == MQTTCLIENT_PERSISTENCE_DEFAULT) {
-        rc = MQTTCLIENT_PERSISTENCE_ERROR;
         goto exit;
     }
 
@@ -212,10 +206,8 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
 }
 
 
-int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId,
-                      int persistence_type, void *persistence_context) {
-    return MQTTClient_createWithOptions(handle, serverURI, clientId, persistence_type,
-                                        persistence_context, NULL);
+int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId) {
+    return MQTTClient_createWithOptions(handle, serverURI, clientId, NULL);
 }
 
 
