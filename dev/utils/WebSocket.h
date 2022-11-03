@@ -2,7 +2,6 @@
 #if !defined(WEBSOCKET_H)
 #define WEBSOCKET_H
 
-//#include "MQTTPacket.h"
 #include "Socket.h"
 
 /* closes a websocket connection */

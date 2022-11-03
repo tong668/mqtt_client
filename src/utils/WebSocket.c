@@ -2,22 +2,18 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "WebSocket.h"
-
 #include "Base64.h"
 #include "Log.h"
 #include "SHA1.h"
 #include "LinkedList.h"
-//#include "MQTTProtocolOut.h"
 #include "SocketBuffer.h"
-
-#  include <endian.h>
+#include <endian.h>
 #include "Socket.h"
-
 #include <limits.h>
 #include <stdlib.h>
 #include <time.h>
+
 void uuid_generate(uuid_t out) {
     {
         /* very insecure, but generates a random uuid */
@@ -361,8 +357,7 @@ int WebSocket_getch(networkHandles *net, char *c) {
             *c = buf[frame->pos++];
             rc = TCPSOCKET_COMPLETE;
         }
-    }
-    else
+    } else
         rc = Socket_getch(net->socket, c);
 
     exit:
@@ -449,8 +444,7 @@ char *WebSocket_getdata(networkHandles *net, size_t bytes, size_t *actual_len) {
                 last_frame = ListDetachHead(in_frames);
             }
         }
-    }
-    else
+    } else
         rv = Socket_getdata(net->socket, bytes, actual_len, &rc);
 
     exit:

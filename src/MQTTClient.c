@@ -27,26 +27,26 @@ ClientStates *bstate = &ClientState;
 MQTTProtocol state;
 
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type mqttclient_mutex = &mqttclient_mutex_store;
+static pthread_mutex_t* mqttclient_mutex = &mqttclient_mutex_store;
 
 static pthread_mutex_t socket_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type socket_mutex = &socket_mutex_store;
+static pthread_mutex_t* socket_mutex = &socket_mutex_store;
 
 static pthread_mutex_t subscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type subscribe_mutex = &subscribe_mutex_store;
+static pthread_mutex_t* subscribe_mutex = &subscribe_mutex_store;
 
 static pthread_mutex_t unsubscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
+static pthread_mutex_t* unsubscribe_mutex = &unsubscribe_mutex_store;
 
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type connect_mutex = &connect_mutex_store;
+static pthread_mutex_t* connect_mutex = &connect_mutex_store;
 
 
 static volatile int library_initialized = 0;
 static List *handles = NULL;
 static int running = 0;
 static int tostop = 0;
-static thread_id_type run_id = 0;
+static pthread_t run_id = 0;
 
 
 typedef struct {
@@ -64,11 +64,11 @@ typedef struct {
 
     MQTTClient_published *published;
     void *published_context; /* the context to be associated with the disconnected callback*/
-    sem_type connect_sem;
+    sem_t* connect_sem;
     int rc; /* getsockopt return code in connect */
-    sem_type connack_sem;
-    sem_type suback_sem;
-    sem_type unsuback_sem;
+    sem_t* connack_sem;
+    sem_t* suback_sem;
+    sem_t* unsuback_sem;
     MQTTPacket *pack;
 
     unsigned long commandTimeout;
@@ -81,9 +81,9 @@ static void MQTTClient_emptyMessageQueue(Clients *client);
 
 static int clientSockCompare(void *a, void *b);
 
-static thread_return_type WINAPI connectionLost_call(void *context);
+static void*  connectionLost_call(void *context);
 
-static thread_return_type WINAPI MQTTClient_run(void *n);
+static void*  MQTTClient_run(void *n);
 
 static int MQTTClient_stop(void);
 
@@ -94,7 +94,7 @@ static int MQTTClient_cleanSession(Clients *client);
 static MQTTResponse MQTTClient_connectURIVersion(
         MQTTClient handle, MQTTClient_connectOptions *options,
         const char *serverURI, int MQTTVersion,
-        START_TIME_TYPE start, ELAPSED_TIME_TYPE millisecsTimeout,
+        struct timeval start, uint64_t millisecsTimeout,
         MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
@@ -107,7 +107,7 @@ static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
 
 static void MQTTClient_retry(void);
 
-static MQTTPacket *MQTTClient_cycle(SOCKET *sock, ELAPSED_TIME_TYPE timeout, int *rc);
+static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout);
 
@@ -303,7 +303,7 @@ static int clientSockCompare(void *a, void *b) {
     return m->c->net.socket == *(int *) b;
 }
 
-static thread_return_type WINAPI connectionLost_call(void *context) {
+static void* connectionLost_call(void *context) {
     MQTTClients *m = (MQTTClients *) context;
 
     (*(m->cl))(m->context, NULL);
@@ -311,7 +311,7 @@ static thread_return_type WINAPI connectionLost_call(void *context) {
 }
 
 /* This is the thread function that handles the calling of callback functions if set */
-static thread_return_type WINAPI MQTTClient_run(void *n) {
+static void*  MQTTClient_run(void *n) {
     long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
 
     running = 1;
@@ -555,7 +555,7 @@ void Protocol_processPublication(Publish *publish, Clients *client, int allocate
 static MQTTResponse
 MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                              int MQTTVersion,
-                             START_TIME_TYPE start, ELAPSED_TIME_TYPE millisecsTimeout,
+                             struct timeval start, uint64_t millisecsTimeout,
                              MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
     int rc = SOCKET_ERROR;
@@ -647,7 +647,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
                     rc = MQTTClient_cleanSession(m->c);
                 if (m->c->outboundMsgs->count > 0) {
                     ListElement *outcurrent = NULL;
-                    START_TIME_TYPE zero = START_TIME_ZERO;
+                    struct timeval zero = {0, 0};
 
                     while (ListNextElement(m->c->outboundMsgs, &outcurrent)) {
                         Messages *m = (Messages *) (outcurrent->content);
@@ -694,8 +694,8 @@ void setRetryLoopInterval(int keepalive) {
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
-    START_TIME_TYPE start;
-    ELAPSED_TIME_TYPE millisecsTimeout = 30000L;
+    struct timeval start;
+    uint64_t millisecsTimeout = 30000L;
     MQTTResponse rc = MQTTResponse_initializer;
     int MQTTVersion = 0;
     rc.reasonCode = SOCKET_ERROR;
@@ -906,7 +906,7 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions 
 static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_connection_lost, int stop,
                                   enum MQTTReasonCodes reason, MQTTProperties *props) {
     MQTTClients *m = handle;
-    START_TIME_TYPE start;
+    struct timeval start;
     int rc = MQTTCLIENT_SUCCESS;
     int was_connected = 0;
     if (m == NULL || m->c == NULL) {
@@ -919,7 +919,7 @@ static int MQTTClient_disconnect1(MQTTClient handle, int timeout, int call_conne
         m->c->connect_state = DISCONNECTING; /* indicate disconnecting */
         while (m->c->inboundMsgs->count > 0 ||
                m->c->outboundMsgs->count > 0) { /* wait for all inflight message flows to finish, up to timeout */
-            if (MQTTTime_elapsed(start) >= (ELAPSED_TIME_TYPE) timeout)
+            if (MQTTTime_elapsed(start) >= (uint64_t) timeout)
                 break;
             Thread_unlock_mutex(mqttclient_mutex);
             MQTTClient_yield();
@@ -1302,10 +1302,10 @@ int MQTTClient_publishMessage(MQTTClient handle, const char *topicName, MQTTClie
 
 
 static void MQTTClient_retry(void) {
-    static START_TIME_TYPE last = START_TIME_ZERO;
-    START_TIME_TYPE now;
+    static struct timeval last = {0, 0};
+    struct timeval now;
     now = MQTTTime_now();
-    if (MQTTTime_difftime(now, last) >= (DIFF_TIME_TYPE) (retryLoopIntervalms)) {
+    if (MQTTTime_difftime(now, last) >= (int64_t) (retryLoopIntervalms)) {
         last = MQTTTime_now();
         MQTTProtocol_keepalive(now);
         MQTTProtocol_retry(now, 1, 0);
@@ -1314,11 +1314,11 @@ static void MQTTClient_retry(void) {
 }
 
 
-static MQTTPacket *MQTTClient_cycle(SOCKET *sock, ELAPSED_TIME_TYPE timeout, int *rc) {
+static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
     static Ack ack;
     MQTTPacket *pack = NULL;
     int rc1 = 0;
-    START_TIME_TYPE start;
+    struct timeval start;
 
     start = MQTTTime_start_clock();
     *sock = Socket_getReadySocket(0, (int) timeout, socket_mutex, rc);
@@ -1382,7 +1382,7 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, ELAPSED_TIME_TYPE timeout, int
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout) {
     MQTTPacket *pack = NULL;
     MQTTClients *m = handle;
-    START_TIME_TYPE start = MQTTTime_start_clock();
+    struct timeval start = MQTTTime_start_clock();
 
     if (((MQTTClients *) handle) == NULL || timeout <= 0L) {
         *rc = MQTTCLIENT_FAILURE;
@@ -1450,9 +1450,9 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
 }
 
 void MQTTClient_yield(void) {
-    START_TIME_TYPE start = MQTTTime_start_clock();
-    ELAPSED_TIME_TYPE elapsed = 0L;
-    ELAPSED_TIME_TYPE timeout = 100L;
+    struct timeval start = MQTTTime_start_clock();
+    uint64_t elapsed = 0L;
+    uint64_t timeout = 100L;
     int rc = 0;
     if (running) /* yield is not meant to be called in a multi-thread environment */
     {
@@ -1480,8 +1480,8 @@ void MQTTClient_yield(void) {
 
 int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken mdt, unsigned long timeout) {
     int rc = MQTTCLIENT_FAILURE;
-    START_TIME_TYPE start = MQTTTime_start_clock();
-    ELAPSED_TIME_TYPE elapsed = 0L;
+    struct timeval start = MQTTTime_start_clock();
+    uint64_t elapsed = 0L;
     MQTTClients *m = handle;
 
     Thread_lock_mutex(mqttclient_mutex);

@@ -21,7 +21,7 @@ static int MQTTProtocol_startPublishCommon(
         Publish* publish,
         int qos,
         int retained);
-static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless);
+static void MQTTProtocol_retries(struct timeval now, Clients* client, int regardless);
 
 static int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId);
 
@@ -466,7 +466,7 @@ int MQTTProtocol_handlePubcomps(void* pack, SOCKET sock)
     return rc;
 }
 
-void MQTTProtocol_keepalive(START_TIME_TYPE now)
+void MQTTProtocol_keepalive(struct timeval now)
 {
     ListElement* current = NULL;
 
@@ -481,22 +481,22 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
 
         if (client->ping_outstanding == 1)
         {
-            if (MQTTTime_difftime(now, client->net.lastPing) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+            if (MQTTTime_difftime(now, client->net.lastPing) >= (int64_t)(client->keepAliveInterval * 1000))
             {
                 Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
                 MQTTProtocol_closeSession(client, 1);
             }
         }
         else if (client->ping_due == 1 &&
-                 (MQTTTime_difftime(now, client->ping_due_time) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000)))
+                 (MQTTTime_difftime(now, client->ping_due_time) >= (int64_t)(client->keepAliveInterval * 1000)))
         {
             /* ping still outstanding after keep alive interval, so close session */
             Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
             MQTTProtocol_closeSession(client, 1);
 
         }
-        else if (MQTTTime_difftime(now, client->net.lastSent) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000) ||
-                 MQTTTime_difftime(now, client->net.lastReceived) >= (DIFF_TIME_TYPE)(client->keepAliveInterval * 1000))
+        else if (MQTTTime_difftime(now, client->net.lastSent) >= (int64_t)(client->keepAliveInterval * 1000) ||
+                 MQTTTime_difftime(now, client->net.lastReceived) >= (int64_t)(client->keepAliveInterval * 1000))
         {
             if (Socket_noPendingWrites(client->net.socket))
             {
@@ -523,7 +523,7 @@ void MQTTProtocol_keepalive(START_TIME_TYPE now)
     }
 }
 
-static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regardless)
+static void MQTTProtocol_retries(struct timeval now, Clients* client, int regardless)
 {
     ListElement* outcurrent = NULL;
     if (!regardless && client->retryInterval <= 0 && /* 0 or -ive retryInterval turns off retry except on reconnect */
@@ -540,7 +540,7 @@ static void MQTTProtocol_retries(START_TIME_TYPE now, Clients* client, int regar
            Socket_noPendingWrites(client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
     {
         Messages* m = (Messages*)(outcurrent->content);
-        if (regardless || MQTTTime_difftime(now, m->lastTouch) > (DIFF_TIME_TYPE)(max(client->retryInterval, 10) * 1000))
+        if (regardless || MQTTTime_difftime(now, m->lastTouch) > (int64_t)(max(client->retryInterval, 10) * 1000))
         {
             if (regardless)
                 ++client->connect_sent;
@@ -610,7 +610,7 @@ int MQTTProtocol_queueAck(Clients* client, int ackType, int msgId)
     return rc;
 }
 
-void MQTTProtocol_retry(START_TIME_TYPE now, int doRetry, int regardless)
+void MQTTProtocol_retry(struct timeval now, int doRetry, int regardless)
 {
     ListElement* current = NULL;
 

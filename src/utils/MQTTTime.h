@@ -21,10 +21,10 @@
 #include <sys/time.h>
 #include "TypeDefine.h"
 
-void MQTTTime_sleep(ELAPSED_TIME_TYPE milliseconds);
-START_TIME_TYPE MQTTTime_start_clock(void);
-START_TIME_TYPE MQTTTime_now(void);
-ELAPSED_TIME_TYPE MQTTTime_elapsed(START_TIME_TYPE milliseconds);
-DIFF_TIME_TYPE MQTTTime_difftime(START_TIME_TYPE t_new, START_TIME_TYPE t_old);
+void MQTTTime_sleep(uint64_t milliseconds);
+struct timeval MQTTTime_start_clock(void);
+struct timeval MQTTTime_now(void);
+uint64_t MQTTTime_elapsed(struct timeval milliseconds);
+int64_t MQTTTime_difftime(struct timeval t_new, struct timeval t_old);
 
 #endif

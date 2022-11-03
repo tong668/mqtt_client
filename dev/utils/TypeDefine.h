@@ -172,15 +172,6 @@ typedef struct MQTTSubscribe_options
 
 #define MQTT_BAD_SUBSCRIBE 0x80
 
-
-#define START_TIME_TYPE struct timeval
-#define START_TIME_ZERO {0, 0}
-
-#define ELAPSED_TIME_TYPE uint64_t
-#define DIFF_TIME_TYPE int64_t
-
-
-
 /* connection states */
 /** no connection in progress, see connected value */
 #define NOT_IN_PROGRESS  0x0
@@ -303,8 +294,6 @@ typedef struct
     int len; /**< the length of the string */
     char* data; /**< pointer to the string data */
 } MQTTLenString;
-
-
 
 typedef struct
 {
@@ -437,7 +426,7 @@ typedef struct
     int MQTTVersion;
     MQTTProperties properties;
     Publications *publish;
-    START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
+    struct timeval lastTouch;		    /**> used for retry and expiry */
     char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
     int len;				/**> length of the whole structure+data */
 } Messages;
@@ -446,9 +435,9 @@ typedef struct
 typedef struct
 {
     SOCKET socket;
-    START_TIME_TYPE lastSent;
-    START_TIME_TYPE lastReceived;
-    START_TIME_TYPE lastPing;
+    struct timeval lastSent;
+    struct timeval lastReceived;
+    struct timeval lastPing;
     char *http_proxy;
     char *http_proxy_auth;
     int websocket; /**< socket has been upgraded to use web sockets */
@@ -639,7 +628,7 @@ typedef struct
     unsigned int ping_outstanding : 1;
     unsigned int ping_due : 1;      /**< we couldn't send a ping so we should send one when we can */
     signed int connect_state : 4;
-    START_TIME_TYPE ping_due_time;  /**< the time at which the ping should have been sent (ping_due) */
+    struct timeval ping_due_time;  /**< the time at which the ping should have been sent (ping_due) */
     networkHandles net;             /**< network info for this client */
     int msgID;                      /**< the MQTT message id */
     int keepAliveInterval;          /**< the MQTT keep alive interval */

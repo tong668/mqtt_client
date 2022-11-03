@@ -22,15 +22,10 @@
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
 #define CLIENT_VERSION  "1.3.10"
 
-#define LIBMQTT_API extern
-
-#define mutex_type pthread_mutex_t*
-
 #define SOCKET int
+#define SOCKETBUFFER_COMPLETE 0
+#define SOCKETBUFFER_INTERRUPTED -22 /* must be the same value as TCPSOCKET_INTERRUPTED */
 
-#if defined(HIGH_PERFORMANCE)
-#define NO_HEAP_TRACKING 1
-#endif
 #define PAHO_MEMORY_ERROR -99
 
 #if defined(HIGH_PERFORMANCE)
@@ -49,8 +44,6 @@
 #define URI_WS "ws://"
 #define URI_WSS "wss://"
 
-#define WINAPI
-
 #define MQTTCLIENT_PERSISTENCE_DEFAULT 0
 
 #define MQTTCLIENT_PERSISTENCE_NONE 1
@@ -60,8 +53,6 @@
 #define MQTTCLIENT_PERSISTENCE_ERROR -2
 
 #define MQTT_INVALID_PROPERTY_ID -2
-
-//#define UCHAR_MAX 255 //todo
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {
@@ -180,15 +171,6 @@ typedef struct MQTTSubscribe_options
 #define MQTTVERSION_3_1_1 4
 
 #define MQTT_BAD_SUBSCRIBE 0x80
-
-
-#define START_TIME_TYPE struct timeval
-#define START_TIME_ZERO {0, 0}
-
-#define ELAPSED_TIME_TYPE uint64_t
-#define DIFF_TIME_TYPE int64_t
-
-
 
 /* connection states */
 /** no connection in progress, see connected value */
@@ -312,8 +294,6 @@ typedef struct
     int len; /**< the length of the string */
     char* data; /**< pointer to the string data */
 } MQTTLenString;
-
-
 
 typedef struct
 {
@@ -446,7 +426,7 @@ typedef struct
     int MQTTVersion;
     MQTTProperties properties;
     Publications *publish;
-    START_TIME_TYPE lastTouch;		    /**> used for retry and expiry */
+    struct timeval lastTouch;		    /**> used for retry and expiry */
     char nextMessageType;	/**> PUBREC, PUBREL, PUBCOMP */
     int len;				/**> length of the whole structure+data */
 } Messages;
@@ -455,9 +435,9 @@ typedef struct
 typedef struct
 {
     SOCKET socket;
-    START_TIME_TYPE lastSent;
-    START_TIME_TYPE lastReceived;
-    START_TIME_TYPE lastPing;
+    struct timeval lastSent;
+    struct timeval lastReceived;
+    struct timeval lastPing;
     char *http_proxy;
     char *http_proxy_auth;
     int websocket; /**< socket has been upgraded to use web sockets */
@@ -648,7 +628,7 @@ typedef struct
     unsigned int ping_outstanding : 1;
     unsigned int ping_due : 1;      /**< we couldn't send a ping so we should send one when we can */
     signed int connect_state : 4;
-    START_TIME_TYPE ping_due_time;  /**< the time at which the ping should have been sent (ping_due) */
+    struct timeval ping_due_time;  /**< the time at which the ping should have been sent (ping_due) */
     networkHandles net;             /**< network info for this client */
     int msgID;                      /**< the MQTT message id */
     int keepAliveInterval;          /**< the MQTT keep alive interval */
