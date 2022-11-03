@@ -50,7 +50,7 @@
  * @param parameter pointer to the function parameter, can be NULL
  */
 void Thread_start(thread_fn fn, void *parameter) {
-    thread_type thread = 0;
+    pthread_t thread = 0;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -64,8 +64,8 @@ void Thread_start(thread_fn fn, void *parameter) {
  * @param rc return code: 0 for success, negative otherwise
  * @return the new mutex
  */
-mutex_type Thread_create_mutex(int *rc) {
-    mutex_type mutex = NULL;
+pthread_mutex_t* Thread_create_mutex(int *rc) {
+    pthread_mutex_t* mutex = NULL;
     *rc = -1;
 
     mutex = malloc(sizeof(pthread_mutex_t));
@@ -79,7 +79,7 @@ mutex_type Thread_create_mutex(int *rc) {
  * Lock a mutex which has alrea
  * @return completion code, 0 is success
  */
-int Thread_lock_mutex(mutex_type mutex) {
+int Thread_lock_mutex(pthread_mutex_t* mutex) {
     int rc = -1;
     rc = pthread_mutex_lock(mutex);
     return rc;
@@ -90,7 +90,7 @@ int Thread_lock_mutex(mutex_type mutex) {
  * @param mutex the mutex
  * @return completion code, 0 is success
  */
-int Thread_unlock_mutex(mutex_type mutex) {
+int Thread_unlock_mutex(pthread_mutex_t* mutex) {
     int rc = -1;
     rc = pthread_mutex_unlock(mutex);
     return rc;
@@ -100,7 +100,7 @@ int Thread_unlock_mutex(mutex_type mutex) {
  * Destroy a mutex which has already been created
  * @param mutex the mutex
  */
-int Thread_destroy_mutex(mutex_type mutex) {
+int Thread_destroy_mutex(pthread_mutex_t* mutex) {
     int rc = 0;
     rc = pthread_mutex_destroy(mutex);
     free(mutex);
@@ -121,8 +121,8 @@ pthread_t Thread_getid(void) {
  * @param rc return code: 0 for success, negative otherwise
  * @return the new condition variable
  */
-sem_type Thread_create_sem(int *rc) {
-    sem_type sem = NULL;
+sem_t * Thread_create_sem(int *rc) {
+    sem_t * sem = NULL;
 
     *rc = -1;
     sem = malloc(sizeof(sem_t));
@@ -139,7 +139,7 @@ sem_type Thread_create_sem(int *rc) {
  * @param timeout the maximum time to wait, in milliseconds
  * @return completion code
  */
-int Thread_wait_sem(sem_type sem, int timeout) {
+int Thread_wait_sem(sem_t * sem, int timeout) {
 /* sem_timedwait is the obvious call to use, but seemed not to work on the Viper,
  * so I've used trywait in a loop instead. Ian Craggs 23/7/2010
  */
@@ -164,7 +164,7 @@ int Thread_wait_sem(sem_type sem, int timeout) {
  * @param sem the semaphore
  * @return 0 (false) or 1 (true)
  */
-int Thread_check_sem(sem_type sem) {
+int Thread_check_sem(sem_t * sem) {
 
     /* If the call was unsuccessful, the state of the semaphore shall be unchanged,
      * and the function shall return a value of -1 */
@@ -177,7 +177,7 @@ int Thread_check_sem(sem_type sem) {
  * @param sem the semaphore
  * @return 0 on success
  */
-int Thread_post_sem(sem_type sem) {
+int Thread_post_sem(sem_t * sem) {
     int rc = 0;
     int val;
     int rc1 = sem_getvalue(sem, &val);
@@ -192,7 +192,7 @@ int Thread_post_sem(sem_type sem) {
  * Destroy a semaphore which has already been created
  * @param sem the semaphore
  */
-int Thread_destroy_sem(sem_type sem) {
+int Thread_destroy_sem(sem_t * sem) {
     int rc = 0;
     rc = sem_destroy(sem);
     free(sem);

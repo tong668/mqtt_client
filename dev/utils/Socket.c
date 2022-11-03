@@ -41,7 +41,7 @@
 
 #if defined(USE_SELECT)
 int isReady(int socket, fd_set* read_set, fd_set* write_set);
-int Socket_continueWrites(fd_set* pwset, int* socket, mutex_type mutex);
+int Socket_continueWrites(fd_set* pwset, int* socket, pthread_mutex_t* mutex);
 #else
 int isReady(int index);
 int Socket_continueWrites(SOCKET* socket, mutex_type mutex);
@@ -308,7 +308,7 @@ int isReady(int index)
  *  @param rc a value other than 0 indicates an error of the returned socket
  *  @return the socket next ready, or 0 if none is ready
  */
-SOCKET Socket_getReadySocket(int more_work, int timeout, mutex_type mutex, int* rc)
+SOCKET Socket_getReadySocket(int more_work, int timeout, pthread_mutex_t* mutex, int* rc)
 {
 	int sock = 0;
 	*rc = 0;
@@ -1129,7 +1129,7 @@ exit:
  *  @param sock in case of a socket error contains the affected socket
  *  @return completion code, 0 or SOCKET_ERROR
  */
-int Socket_continueWrites(fd_set* pwset, int* sock, mutex_type mutex)
+int Socket_continueWrites(fd_set* pwset, int* sock, pthread_mutex_t* mutex)
 #else
 /**
  *  Continue any outstanding socket writes

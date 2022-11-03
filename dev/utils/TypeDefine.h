@@ -22,7 +22,7 @@
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
 #define CLIENT_VERSION  "1.3.10"
 
-#define mutex_type pthread_mutex_t*
+//#define mutex_type pthread_mutex_t*
 
 #define SOCKET int
 

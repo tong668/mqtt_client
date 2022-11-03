@@ -94,7 +94,7 @@ struct timeval now_ts, last_ts;
 static char msg_buf[512];
 
 static pthread_mutex_t log_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type log_mutex = &log_mutex_store;
+static pthread_mutex_t* log_mutex = &log_mutex_store;
 
 
 int Log_initialize(Log_nameValue *info) {

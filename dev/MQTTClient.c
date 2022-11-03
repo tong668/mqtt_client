@@ -27,19 +27,19 @@ ClientStates *bstate = &ClientState;
 MQTTProtocol state;
 
 static pthread_mutex_t mqttclient_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type mqttclient_mutex = &mqttclient_mutex_store;
+static pthread_mutex_t* mqttclient_mutex = &mqttclient_mutex_store;
 
 static pthread_mutex_t socket_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type socket_mutex = &socket_mutex_store;
+static pthread_mutex_t* socket_mutex = &socket_mutex_store;
 
 static pthread_mutex_t subscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type subscribe_mutex = &subscribe_mutex_store;
+static pthread_mutex_t* subscribe_mutex = &subscribe_mutex_store;
 
 static pthread_mutex_t unsubscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type unsubscribe_mutex = &unsubscribe_mutex_store;
+static pthread_mutex_t* unsubscribe_mutex = &unsubscribe_mutex_store;
 
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static mutex_type connect_mutex = &connect_mutex_store;
+static pthread_mutex_t* connect_mutex = &connect_mutex_store;
 
 
 static volatile int library_initialized = 0;
@@ -64,11 +64,11 @@ typedef struct {
 
     MQTTClient_published *published;
     void *published_context; /* the context to be associated with the disconnected callback*/
-    sem_type connect_sem;
+    sem_t* connect_sem;
     int rc; /* getsockopt return code in connect */
-    sem_type connack_sem;
-    sem_type suback_sem;
-    sem_type unsuback_sem;
+    sem_t* connack_sem;
+    sem_t* suback_sem;
+    sem_t* unsuback_sem;
     MQTTPacket *pack;
 
     unsigned long commandTimeout;

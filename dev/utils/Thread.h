@@ -20,13 +20,9 @@
 #if !defined(THREAD_H)
 #define THREAD_H
 
-#include "TypeDefine.h" /* Needed for mutex_type */
+#include "TypeDefine.h"
 #include <pthread.h>
 #include <semaphore.h>
-
-#define thread_type pthread_t
-//#define thread_id_type pthread_t
-//#define thread_return_type void*
 
 typedef void*(*thread_fn)(void *);
 
@@ -35,8 +31,6 @@ typedef struct {
     pthread_mutex_t mutex;
 } cond_type_struct;
 typedef cond_type_struct *cond_type;
-
-typedef sem_t *sem_type;
 
 cond_type Thread_create_cond(int *);
 
@@ -48,24 +42,24 @@ int Thread_destroy_cond(cond_type);
 
 extern void Thread_start(thread_fn, void *);
 
-extern mutex_type Thread_create_mutex(int *);
+extern pthread_mutex_t* Thread_create_mutex(int *);
 
-extern int Thread_lock_mutex(mutex_type);
+extern int Thread_lock_mutex(pthread_mutex_t*);
 
-extern int Thread_unlock_mutex(mutex_type);
+extern int Thread_unlock_mutex(pthread_mutex_t*);
 
-int Thread_destroy_mutex(mutex_type);
+int Thread_destroy_mutex(pthread_mutex_t*);
 
 extern pthread_t Thread_getid();
 
-sem_type Thread_create_sem(int *);
+sem_t* Thread_create_sem(int *);
 
-int Thread_wait_sem(sem_type sem, int timeout);
+int Thread_wait_sem(sem_t* sem, int timeout);
 
-int Thread_check_sem(sem_type sem);
+int Thread_check_sem(sem_t* sem);
 
-int Thread_post_sem(sem_type sem);
+int Thread_post_sem(sem_t* sem);
 
-int Thread_destroy_sem(sem_type sem);
+int Thread_destroy_sem(sem_t* sem);
 
 #endif
