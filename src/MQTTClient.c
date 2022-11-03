@@ -5,12 +5,11 @@
 #include <utf-8.h>
 #include <string.h>
 #include <Log.h>
-#include <Socket.h>
-#include <WebSocket.h>
-#include <MQTTTime.h>
-#include <SocketBuffer.h>
+#include "Socket.h"
+#include "WebSocket.h"
+#include "MQTTTime.h"
+#include "SocketBuffer.h"
 #include "MQTTClient.h"
-#include "utils/TypeDefine.h"
 #include "Thread.h"
 #include "MQTTProtocol.h"
 #include "MQTTPacket.h"

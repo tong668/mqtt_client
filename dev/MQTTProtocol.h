@@ -5,7 +5,7 @@
 #ifndef MQTT_CLIENT_MQTTPROTOCOL_H
 #define MQTT_CLIENT_MQTTPROTOCOL_H
 
-#include <Socket.h>
+#include "Socket.h"
 
 int MQTTProtocol_startPublish(Clients *pubclient, Publish *publish, int qos, int retained, Messages **m);
 
