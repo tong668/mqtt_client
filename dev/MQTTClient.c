@@ -46,7 +46,7 @@ static volatile int library_initialized = 0;
 static List *handles = NULL;
 static int running = 0;
 static int tostop = 0;
-static thread_id_type run_id = 0;
+static pthread_t run_id = 0;
 
 
 typedef struct {

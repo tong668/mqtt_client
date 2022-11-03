@@ -25,7 +25,7 @@
 #include <semaphore.h>
 
 #define thread_type pthread_t
-#define thread_id_type pthread_t
+//#define thread_id_type pthread_t
 #define thread_return_type void*
 
 typedef thread_return_type(*thread_fn)(void *);
@@ -56,7 +56,7 @@ extern int Thread_unlock_mutex(mutex_type);
 
 int Thread_destroy_mutex(mutex_type);
 
-extern thread_id_type Thread_getid();
+extern pthread_t Thread_getid();
 
 sem_type Thread_create_sem(int *);
 

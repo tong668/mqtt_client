@@ -57,7 +57,7 @@ typedef struct {
     struct timeval ts;
     int sametime_count;
     int number;
-    thread_id_type thread_id;
+    pthread_t thread_id;
     int depth;
     char name[MAX_FUNCTION_NAME_LENGTH + 1];
     int line;
@@ -370,7 +370,7 @@ void Log(enum LOG_LEVELS log_level, int msgno, const char *format, ...) {
  * @param aFormat the printf format string to be used if the message id does not exist
  * @param ... the printf inserts
  */
-void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, thread_id_type thread_id, int current_depth, const char *name,
+void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, pthread_t thread_id, int current_depth, const char *name,
                     int line, int *rc) {
     traceEntry *cur_entry = NULL;
 

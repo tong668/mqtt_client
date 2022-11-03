@@ -19,26 +19,26 @@
 #define LOG_H
 
 
-	#include <pthread.h>
-	#define thread_id_type pthread_t
+#include <pthread.h>
+
+//#define thread_id_type pthread_t
 
 
 enum LOG_LEVELS {
-	INVALID_LEVEL = -1,
-	TRACE_MAXIMUM = 1,
-	TRACE_MEDIUM,
-	TRACE_MINIMUM,
-	TRACE_PROTOCOL,
-	LOG_ERROR,
-	LOG_SEVERE,
-	LOG_FATAL,
+    INVALID_LEVEL = -1,
+    TRACE_MAXIMUM = 1,
+    TRACE_MEDIUM,
+    TRACE_MINIMUM,
+    TRACE_PROTOCOL,
+    LOG_ERROR,
+    LOG_SEVERE,
+    LOG_FATAL,
 };
 
-typedef struct
-{
-	enum LOG_LEVELS trace_level;	/**< trace level */
-	int max_trace_entries;		/**< max no of entries in the trace buffer */
-	enum LOG_LEVELS trace_output_level;		/**< trace level to output to destination */
+typedef struct {
+    enum LOG_LEVELS trace_level;    /**< trace level */
+    int max_trace_entries;        /**< max no of entries in the trace buffer */
+    enum LOG_LEVELS trace_output_level;        /**< trace level to output to destination */
 } trace_settings_type;
 
 extern trace_settings_type trace_settings;
@@ -48,20 +48,23 @@ extern trace_settings_type trace_settings;
 #define TRACE_MIN TRACE_MINIMUM
 #define TRACE_MED TRACE_MEDIUM
 
-typedef struct
-{
-	const char* name;
-	const char* value;
+typedef struct {
+    const char *name;
+    const char *value;
 } Log_nameValue;
 
-int Log_initialize(Log_nameValue*);
+int Log_initialize(Log_nameValue *);
+
 void Log_terminate(void);
 
 void Log(enum LOG_LEVELS, int, const char *, ...);
-void Log_stackTrace(enum LOG_LEVELS, int, thread_id_type, int, const char*, int, int*);
+
+void Log_stackTrace(enum LOG_LEVELS, int, pthread_t, int, const char *, int, int *);
 
 typedef void Log_traceCallback(enum LOG_LEVELS level, const char *message);
-void Log_setTraceCallback(Log_traceCallback* callback);
+
+void Log_setTraceCallback(Log_traceCallback *callback);
+
 void Log_setTraceLevel(enum LOG_LEVELS level);
 
 #endif

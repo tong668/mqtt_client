@@ -112,7 +112,7 @@ int Thread_destroy_mutex(mutex_type mutex) {
  * Get the thread id of the thread from which this function is called
  * @return thread id, type varying according to OS
  */
-thread_id_type Thread_getid(void) {
+pthread_t Thread_getid(void) {
     return pthread_self();
 }
 
