@@ -26,9 +26,9 @@
 
 #define thread_type pthread_t
 //#define thread_id_type pthread_t
-#define thread_return_type void*
+//#define thread_return_type void*
 
-typedef thread_return_type(*thread_fn)(void *);
+typedef void*(*thread_fn)(void *);
 
 typedef struct {
     pthread_cond_t cond;
