@@ -70,15 +70,6 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
     return rc;
 }
 
-
-/**
- * Function used in the new packets table to create connack packets.
- * @param MQTTVersion MQTT 5 or less?
- * @param aHeader the MQTT header byte
- * @param data the rest of the packet
- * @param datalen the length of the rest of the packet
- * @return pointer to the packet structure
- */
 void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen) {
     Connack *pack = NULL;
     char *curdata = data;
@@ -100,11 +91,6 @@ void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, siz
     return pack;
 }
 
-
-/**
- * Free allocated storage for a connack packet.
- * @param pack pointer to the connack packet structure
- */
 void MQTTPacket_freeConnack(Connack *pack) {
     free(pack);
 }

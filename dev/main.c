@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "TypeDefine.h"
+#include "mqttPacket.h"
 
 #define ADDRESS     "tcp://192.168.101.4:1883"
 #define CLIENTID    "mqtt_pub"

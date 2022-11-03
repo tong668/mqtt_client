@@ -2,9 +2,10 @@
 #include "MQTTProperties.h"
 
 #include "MQTTPacket.h"
-#include "MQTTProtocolClient.h"
+//#include "MQTTProtocolClient.h"
 
 #include <memory.h>
+#include <Log.h>
 
 static struct nameToType
 {
