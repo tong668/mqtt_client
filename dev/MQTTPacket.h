@@ -7,7 +7,7 @@
 
 #include "Socket.h"
 #include "LinkedList.h"
-#include "mqttProperties.h"
+#include "MQTTProperties.h"
 #include <endian.h>
 
 int MQTTPacket_encode(char *buf, size_t length);

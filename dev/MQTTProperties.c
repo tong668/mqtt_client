@@ -2,8 +2,8 @@
 // Created by Administrator on 2022/11/3.
 //
 
-#include "mqttProperties.h"
-#include "mqttPacket.h"
+#include "MQTTProperties.h"
+#include "MQTTPacket.h"
 #include <memory.h>
 #include <Log.h>
 

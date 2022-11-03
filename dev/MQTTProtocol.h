@@ -1,13 +1,11 @@
+//
+// Created by Administrator on 2022/11/3.
+//
 
+#ifndef MQTT_CLIENT_MQTTPROTOCOL_H
+#define MQTT_CLIENT_MQTTPROTOCOL_H
 
-#if !defined(MQTTPROTOCOLCLIENT_H)
-#define MQTTPROTOCOLCLIENT_H
-
-#include "LinkedList.h"
-#include "MQTTPacket.h"
-#include "Log.h"
-#include "Messages.h"
-#include "MQTTProperties.h"
+#include <Socket.h>
 
 int MQTTProtocol_startPublish(Clients *pubclient, Publish *publish, int qos, int retained, Messages **m);
 
@@ -51,4 +49,22 @@ char *MQTTStrdup(const char *src);
 
 void MQTTProtocol_writeAvailable(SOCKET socket);
 
-#endif
+//mqttprotoclout
+size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
+
+int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
+                         MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);
+
+int MQTTProtocol_handlePingresps(void *pack, SOCKET sock);
+
+int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
+                           MQTTProperties *props);
+
+int MQTTProtocol_handleSubacks(void *pack, SOCKET sock);
+
+int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTProperties *props);
+
+int MQTTProtocol_handleUnsubacks(void *pack, SOCKET sock);
+
+
+#endif //MQTT_CLIENT_MQTTPROTOCOL_H

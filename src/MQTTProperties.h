@@ -1,6 +1,9 @@
+//
+// Created by Administrator on 2022/11/3.
+//
 
-#if !defined(MQTTPROPERTIES_H)
-#define MQTTPROPERTIES_H
+#ifndef MQTT_CLIENT_MQTTPROPERTIES_H
+#define MQTT_CLIENT_MQTTPROPERTIES_H
 
 #include "utils/TypeDefine.h"
 
@@ -22,5 +25,4 @@ LIBMQTT_API int MQTTProperties_getNumericValue(MQTTProperties *props, enum MQTTP
 
 LIBMQTT_API int MQTTProperties_getNumericValueAt(MQTTProperties *props, enum MQTTPropertyCodes propid, int index);
 
-
-#endif /* MQTTPROPERTIES_H */
+#endif //MQTT_CLIENT_MQTTPROPERTIES_H

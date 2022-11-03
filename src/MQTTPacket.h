@@ -1,7 +1,9 @@
+//
+// Created by Administrator on 2022/11/3.
+//
 
-
-#if !defined(MQTTPACKET_H)
-#define MQTTPACKET_H
+#ifndef MQTT_CLIENT_MQTTPACKET_H
+#define MQTT_CLIENT_MQTTPACKET_H
 
 #include "Socket.h"
 #include "LinkedList.h"
@@ -60,8 +62,26 @@ void writeMQTTLenString(char **pptr, MQTTLenString lenstring);
 
 int MQTTPacket_VBIlen(int rem_len);
 
-int clientSocketCompare(void *a, void *b); //todo 暂时放这里
+int clientSocketCompare(void *a, void *b); //todo 暂时放这里，将来移走
 
-#include "MQTTPacketOut.h"
+//#include "mqttPacketOut.h"
 
-#endif /* MQTTPACKET_H */
+int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
+                            MQTTProperties *connectProperties, MQTTProperties *willProperties);
+
+void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
+
+void MQTTPacket_freeConnack(Connack *pack);
+
+int MQTTPacket_send_pingreq(networkHandles *net, const char *clientID);
+
+int MQTTPacket_send_subscribe(List *topics, List *qoss, MQTTSubscribe_options *opts, MQTTProperties *props,
+                              int msgid, int dup, Clients *client);
+
+void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
+
+int MQTTPacket_send_unsubscribe(List *topics, MQTTProperties *props, int msgid, int dup, Clients *client);
+
+void *MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
+
+#endif //MQTT_CLIENT_MQTTPACKET_H
