@@ -56,11 +56,6 @@ extern int MQTTClient_publishMessage(MQTTClient handle, const char *topicName, M
 extern MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *msg,
                                                     MQTTClient_deliveryToken *dt);
 
-extern int MQTTClient_waitForCompletion(MQTTClient handle, MQTTClient_deliveryToken dt, unsigned long timeout);
-
-
-extern void MQTTClient_yield(void);
-
 
 extern void MQTTClient_freeMessage(MQTTClient_message **msg);
 
