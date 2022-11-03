@@ -47,8 +47,6 @@ char *MQTTStrncpy(char *dest, const char *src, size_t num);
 
 char *MQTTStrdup(const char *src);
 
-void MQTTProtocol_writeAvailable(SOCKET socket);
-
 //mqttprotoclout
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
 
@@ -60,11 +58,8 @@ int MQTTProtocol_handlePingresps(void *pack, SOCKET sock);
 int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
                            MQTTProperties *props);
 
-int MQTTProtocol_handleSubacks(void *pack, SOCKET sock);
-
 int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTProperties *props);
 
-int MQTTProtocol_handleUnsubacks(void *pack, SOCKET sock);
 
 
 #endif //MQTT_CLIENT_MQTTPROTOCOL_H

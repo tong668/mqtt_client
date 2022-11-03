@@ -686,42 +686,6 @@ void MQTTProtocol_freeMessageList(List* msgList)
     ListFree(msgList);
 }
 
-void MQTTProtocol_writeAvailable(SOCKET socket)
-{
-    Clients* client = NULL;
-    ListElement* current = NULL;
-    int rc = 0;
-
-    client = (Clients*)(ListFindItem(bstate->clients, &socket, clientSocketCompare)->content);
-
-    current = NULL;
-    while (ListNextElement(client->outboundQueue, &current) && rc == 0)
-    {
-        AckRequest* ackReq = (AckRequest*)(current->content);
-
-        switch (ackReq->ackType)
-        {
-            case PUBACK:
-                rc = MQTTPacket_send_puback(client->MQTTVersion, ackReq->messageId, &client->net, client->clientID);
-                break;
-            case PUBREC:
-                rc = MQTTPacket_send_pubrec(client->MQTTVersion, ackReq->messageId, &client->net, client->clientID);
-                break;
-            case PUBREL:
-                rc = MQTTPacket_send_pubrel(client->MQTTVersion, ackReq->messageId, 0, &client->net, client->clientID);
-                break;
-            case PUBCOMP:
-                rc = MQTTPacket_send_pubcomp(client->MQTTVersion, ackReq->messageId, &client->net, client->clientID);
-                break;
-            default:
-                Log(LOG_ERROR, -1, "unknown ACK type %d, dropping msg", ackReq->ackType);
-                break;
-        }
-    }
-
-    ListEmpty(client->outboundQueue);
-}
-
 char* MQTTStrncpy(char *dest, const char *src, size_t dest_size)
 {
     size_t count = dest_size;
@@ -964,34 +928,9 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID,
     return rc;
 }
 
-
-int MQTTProtocol_handleSubacks(void* pack, SOCKET sock)
-{
-    Suback* suback = (Suback*)pack;
-    Clients* client = NULL;
-    int rc = TCPSOCKET_COMPLETE;
-
-    client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
-    Log(LOG_PROTOCOL, 23, NULL, sock, client->clientID, suback->msgId);
-    MQTTPacket_freeSuback(suback);
-    return rc;
-}
-
 int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID, MQTTProperties* props)
 {
     int rc = 0;
     rc = MQTTPacket_send_unsubscribe(topics, props, msgID, 0, client);
     return rc;
 }
-
-int MQTTProtocol_handleUnsubacks(void* pack, SOCKET sock)
-{
-    Unsuback* unsuback = (Unsuback*)pack;
-    Clients* client = NULL;
-    int rc = TCPSOCKET_COMPLETE;
-    client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
-    Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
-    MQTTPacket_freeUnsuback(unsuback);
-    return rc;
-}
-
