@@ -22,13 +22,10 @@
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
 #define CLIENT_VERSION  "1.3.10"
 
-//#define mutex_type pthread_mutex_t*
-
 #define SOCKET int
+#define SOCKETBUFFER_COMPLETE 0
+#define SOCKETBUFFER_INTERRUPTED -22 /* must be the same value as TCPSOCKET_INTERRUPTED */
 
-#if defined(HIGH_PERFORMANCE)
-#define NO_HEAP_TRACKING 1
-#endif
 #define PAHO_MEMORY_ERROR -99
 
 #if defined(HIGH_PERFORMANCE)
@@ -47,8 +44,6 @@
 #define URI_WS "ws://"
 #define URI_WSS "wss://"
 
-//#define WINAPI
-
 #define MQTTCLIENT_PERSISTENCE_DEFAULT 0
 
 #define MQTTCLIENT_PERSISTENCE_NONE 1
@@ -58,8 +53,6 @@
 #define MQTTCLIENT_PERSISTENCE_ERROR -2
 
 #define MQTT_INVALID_PROPERTY_ID -2
-
-//#define UCHAR_MAX 255 //todo
 
 /** The MQTT V5 one byte reason code */
 enum MQTTReasonCodes {

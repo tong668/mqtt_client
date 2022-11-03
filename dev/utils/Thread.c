@@ -28,21 +28,8 @@
 
 
 #include "Thread.h"
-#include "Log.h"
-
-#undef malloc
-#undef realloc
-#undef free
-
 #include <errno.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <stdarg.h>
 
 /**
  * Start a new thread

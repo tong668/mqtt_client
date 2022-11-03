@@ -40,12 +40,6 @@ typedef struct {
     int frees[5];
 } pending_writes;
 
-#define SOCKETBUFFER_COMPLETE 0
-#if !defined(SOCKET_ERROR)
-#define SOCKET_ERROR -1
-#endif
-#define SOCKETBUFFER_INTERRUPTED -22 /* must be the same value as TCPSOCKET_INTERRUPTED */
-
 int SocketBuffer_initialize(void);
 
 void SocketBuffer_terminate(void);

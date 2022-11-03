@@ -18,11 +18,7 @@
 #if !defined(LOG_H)
 #define LOG_H
 
-
 #include <pthread.h>
-
-//#define thread_id_type pthread_t
-
 
 enum LOG_LEVELS {
     INVALID_LEVEL = -1,

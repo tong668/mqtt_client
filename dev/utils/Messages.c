@@ -22,15 +22,9 @@
 
 
 #include "Messages.h"
-#include "Log.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-
-#define max_msg_len 120
 
 static const char *protocol_message_list[] =
 {
