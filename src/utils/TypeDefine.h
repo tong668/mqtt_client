@@ -14,10 +14,9 @@
 #if !defined(_MUTEX_TYPE_H_)
 #define _MUTEX_TYPE_H_
 
-#include "LinkedList.h" //todo
+#include "LinkedList.h"
 #include <pthread.h>
 #include <stdlib.h>
-#include <bits/stdint-uintn.h>
 #include <semaphore.h>
 
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
@@ -212,7 +211,7 @@ typedef struct
     char* payload;
     int payloadlen;
     int refcount;
-    uint8_t mask[4];
+    u_int8_t mask[4];
 } Publications;
 
 /**
@@ -511,7 +510,7 @@ typedef struct
     int payloadlen;	/**< payload length */
     int MQTTVersion;  /**< the version of MQTT */
     MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
-    uint8_t mask[4]; /**< the websockets mask the payload is masked with, if any */
+    u_int8_t mask[4]; /**< the websockets mask the payload is masked with, if any */
 } Publish;
 
 
@@ -543,19 +542,6 @@ typedef struct
     MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
     List* qoss;		/**< list of granted QoSs (MQTT 3/4) / reason codes (MQTT 5) */
 } Suback;
-
-
-/**
- * Data for an MQTT V5 unsuback packet.
- */
-typedef struct
-{
-    Header header;	/**< MQTT header byte */
-    int msgId;		/**< MQTT message id */
-    int MQTTVersion;  /**< the version of MQTT */
-    MQTTProperties properties; /**< MQTT 5.0 properties.  Not used for MQTT < 5.0 */
-    List* reasonCodes;	/**< list of reason codes */
-} Unsuback;
 
 typedef struct
 {
