@@ -63,7 +63,7 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout);
 
 static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
-                                   MQTTProperties *connectProperties, MQTTProperties *willProperties);
+                                          MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
 int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
                                  MQTTClient_createOptions *options) {
@@ -366,36 +366,11 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
             rc = SOCKET_ERROR;
             goto exit;
         } else {
-            if (m->c->net.http_proxy) {
-                m->c->connect_state = PROXY_CONNECT_IN_PROGRESS;
-
+            m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
+            if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR) {
+                rc = SOCKET_ERROR;
+                goto exit;
             }
-
-            if (m->websocket) {
-                m->c->connect_state = WEBSOCKET_IN_PROGRESS;
-                if (WebSocket_connect(&m->c->net, 0, serverURI) == SOCKET_ERROR) {
-                    rc = SOCKET_ERROR;
-                    goto exit;
-                }
-            } else {
-                m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
-                if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR) {
-                    rc = SOCKET_ERROR;
-                    goto exit;
-                }
-            }
-        }
-    }
-
-    if (m->c->connect_state == WEBSOCKET_IN_PROGRESS) /* websocket request sent - wait for upgrade */
-    {
-        Thread_unlock_mutex(mqttclient_mutex);
-        MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTTime_elapsed(start));
-        Thread_lock_mutex(mqttclient_mutex);
-        m->c->connect_state = WAIT_FOR_CONNACK; /* websocket upgrade complete */
-        if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR) {
-            rc = SOCKET_ERROR;
-            goto exit;
         }
     }
 
@@ -407,30 +382,6 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
         Thread_lock_mutex(mqttclient_mutex);
         if (pack == NULL)
             rc = SOCKET_ERROR;
-        else {
-            Connack *connack = (Connack *) pack;
-            Log(TRACE_PROTOCOL, 1, NULL, m->c->net.socket, m->c->clientID, connack->rc);
-            if ((rc = connack->rc) == MQTTCLIENT_SUCCESS) {
-                m->c->connected = 1;
-                m->c->good = 1;
-                m->c->connect_state = NOT_IN_PROGRESS;
-                if (MQTTVersion == 4)
-                    sessionPresent = connack->flags.bits.sessionPresent;
-                if (m->c->outboundMsgs->count > 0) {
-                    ListElement *outcurrent = NULL;
-                    struct timeval zero = {0, 0};
-
-                    while (ListNextElement(m->c->outboundMsgs, &outcurrent)) {
-                        Messages *m = (Messages *) (outcurrent->content);
-                        memset(&m->lastTouch, '\0', sizeof(m->lastTouch));
-                    }
-                    if (m->c->connected != 1)
-                        rc = MQTTCLIENT_DISCONNECTED;
-                }
-            }
-            MQTTPacket_freeConnack(connack);
-            m->pack = NULL;
-        }
     }
     exit:
     if (rc == MQTTCLIENT_SUCCESS) {
@@ -499,7 +450,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
 }
 
 static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
-                                   MQTTProperties *connectProperties, MQTTProperties *willProperties) {
+                                          MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;
     Thread_lock_mutex(connect_mutex);
@@ -709,12 +660,7 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
         if (packet_type == CONNECT) {
             if ((*rc = Thread_wait_sem(m->connect_sem, (int) timeout)) == 0)
                 *rc = m->rc;
-        } else if (packet_type == CONNACK)
-            *rc = Thread_wait_sem(m->connack_sem, (int) timeout);
-        else if (packet_type == SUBACK)
-            *rc = Thread_wait_sem(m->suback_sem, (int) timeout);
-        else if (packet_type == UNSUBACK)
-            *rc = Thread_wait_sem(m->unsuback_sem, (int) timeout);
+        } else *rc = Thread_wait_sem(m->connack_sem, (int) timeout);
         if (*rc == 0 && packet_type != CONNECT && m->pack == NULL)
             Log(LOG_ERROR, -1, "waitfor unexpectedly is NULL for client %s, packet_type %d, timeout %ld",
                 m->c->clientID, packet_type, timeout);
