@@ -481,20 +481,20 @@ void MQTTProtocol_keepalive(struct timeval now)
 
         if (client->ping_outstanding == 1)
         {
-            if (MQTTTime_difftime(now, client->net.lastPing) >= (int64_t)(client->keepAliveInterval * 1000))
-            {
-                Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-                MQTTProtocol_closeSession(client, 1);
-            }
+//            if (MQTTTime_difftime(now, client->net.lastPing) >= (int64_t)(client->keepAliveInterval * 1000))
+//            {
+//                Log(TRACE_PROTOCOL, -1, "PINGRESP not received in keepalive interval for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+//                MQTTProtocol_closeSession(client, 1);
+//            }
         }
-        else if (client->ping_due == 1 &&
-                 (MQTTTime_difftime(now, client->ping_due_time) >= (int64_t)(client->keepAliveInterval * 1000)))
-        {
-            /* ping still outstanding after keep alive interval, so close session */
-            Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-            MQTTProtocol_closeSession(client, 1);
-
-        }
+//        else if (client->ping_due == 1 &&
+//                 (MQTTTime_difftime(now, client->ping_due_time) >= (int64_t)(client->keepAliveInterval * 1000)))
+//        {
+//            /* ping still outstanding after keep alive interval, so close session */
+//            Log(TRACE_PROTOCOL, -1, "PINGREQ still outstanding for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
+//            MQTTProtocol_closeSession(client, 1);
+//
+//        }
         else if (MQTTTime_difftime(now, client->net.lastSent) >= (int64_t)(client->keepAliveInterval * 1000) ||
                  MQTTTime_difftime(now, client->net.lastReceived) >= (int64_t)(client->keepAliveInterval * 1000))
         {
@@ -503,7 +503,7 @@ void MQTTProtocol_keepalive(struct timeval now)
                 if (MQTTPacket_send_pingreq(&client->net, client->clientID) != TCPSOCKET_COMPLETE)
                 {
                     Log(TRACE_PROTOCOL, -1, "Error sending PINGREQ for client %s on socket %d, disconnecting", client->clientID, client->net.socket);
-                    MQTTProtocol_closeSession(client, 1);
+//                    MQTTProtocol_closeSession(client, 1);
                 }
                 else
                 {
@@ -564,7 +564,7 @@ static void MQTTProtocol_retries(struct timeval now, Clients* client, int regard
                     client->good = 0;
                     Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
                         Socket_getpeer(client->net.socket));
-                    MQTTProtocol_closeSession(client, 1);
+//                    MQTTProtocol_closeSession(client, 1);
                     client = NULL;
                 }
                 else
@@ -582,7 +582,7 @@ static void MQTTProtocol_retries(struct timeval now, Clients* client, int regard
                     client->good = 0;
                     Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
                         Socket_getpeer(client->net.socket));
-                    MQTTProtocol_closeSession(client, 1);
+//                    MQTTProtocol_closeSession(client, 1);
                     client = NULL;
                 }
                 else
@@ -622,11 +622,11 @@ void MQTTProtocol_retry(struct timeval now, int doRetry, int regardless)
         ListNextElement(bstate->clients, &current);
         if (client->connected == 0)
             continue;
-        if (client->good == 0)
-        {
-            MQTTProtocol_closeSession(client, 1);
-            continue;
-        }
+//        if (client->good == 0)
+//        {
+//            MQTTProtocol_closeSession(client, 1);
+//            continue;
+//        }
         if (Socket_noPendingWrites(client->net.socket) == 0)
             continue;
         if (doRetry)

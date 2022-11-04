@@ -28,7 +28,6 @@ extern MQTTClient_nameValue *MQTTClient_getVersionInfo(void);
 
 extern int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options);
 
-extern int MQTTClient_disconnect(MQTTClient handle, int timeout);
 
 extern int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos);
 

@@ -661,31 +661,14 @@ MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions 
                                    MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;
-//    Thread_lock_mutex(connect_mutex);
+    Thread_lock_mutex(connect_mutex);
     Thread_lock_mutex(mqttclient_mutex);
     rc = MQTTClient_connectURI(handle, options, m->serverURI, connectProperties, willProperties);
     Thread_unlock_mutex(mqttclient_mutex);
-//    Thread_unlock_mutex(connect_mutex);
+    Thread_unlock_mutex(connect_mutex);
     return rc;
 }
 
-
-/**
- * mqttclient_mutex must be locked when you call this function, if multi threaded
- */
-void MQTTProtocol_closeSession(Clients *c, int sendwill) {
-//    MQTTClient_disconnect_internal((MQTTClient) c->context, 0);
-}
-
-
-int MQTTClient_disconnect(MQTTClient handle, int timeout) {
-    int rc = 0;
-
-    Thread_lock_mutex(mqttclient_mutex);
-//    rc = MQTTClient_disconnect1(handle, timeout, 0, 1, MQTTREASONCODE_SUCCESS, NULL);
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
 
 MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
                                        int *qos, MQTTSubscribe_options *opts, MQTTProperties *props) {
@@ -752,9 +735,6 @@ MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char *con
     rc = MQTTProtocol_unsubscribe(m->c, topics, msgid, props);
     ListFreeNoContent(topics);
 
-    exit:
-    if (rc < 0)
-        resp.reasonCode = rc;
     Thread_unlock_mutex(mqttclient_mutex);
     Thread_unlock_mutex(unsubscribe_mutex);
     return resp;
@@ -844,7 +824,6 @@ MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName
 
     rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,
                              message->qos, message->retained, props, deliveryToken);
-    exit:
     return rc;
 }
 

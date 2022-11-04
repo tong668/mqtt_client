@@ -88,11 +88,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
-    {
-        printf("Failed to disconnect, return code %d\n", rc);
-        rc = EXIT_FAILURE;
-    }
     destroy_exit:
     MQTTClient_destroy(&client);
     exit:
