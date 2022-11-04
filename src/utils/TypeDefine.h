@@ -201,7 +201,7 @@ typedef struct
     char* payload;
     int payloadlen;
     int refcount;
-    u_int8_t mask[4];
+    unsigned char mask[4];
 } Publications;
 
 
@@ -253,7 +253,7 @@ typedef struct MQTTProperties
     int length;    /**< mbi: byte length of all properties */
     MQTTProperty *array;  /**< array of properties */
 } MQTTProperties;
-
+#define MQTTProperties_initializer {0, 0, 0, NULL}
 
 typedef struct
 {
@@ -326,6 +326,8 @@ typedef struct MQTTResponse
     enum MQTTReasonCodes* reasonCodes;  /* a list of reason codes.  Used for subscribeMany5 and unsubscribeMany5 */
     MQTTProperties* properties;         /* optionally, the MQTT 5.0 properties returned */
 } MQTTResponse;
+#define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
+
 
 typedef int MQTTClient_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* message);
 
@@ -497,8 +499,6 @@ typedef struct
     List pending_writes; /* for qos 0 writes not complete */
 } MQTTProtocol;
 
-#define MQTTProperties_initializer {0, 0, 0, NULL} //todo
-
 /**
  * Configuration data related to all clients
  */
@@ -535,8 +535,6 @@ typedef struct
     void* context;                  /**< calling context - used when calling disconnect_internal */
     int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
 } Clients;
-
-#define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
 
 typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
