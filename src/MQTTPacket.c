@@ -524,10 +524,6 @@ void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, siz
     return pack;
 }
 
-void MQTTPacket_freeConnack(Connack *pack) {
-    free(pack);
-}
-
 int MQTTPacket_send_subscribe(List *topics, List *qoss, MQTTSubscribe_options *opts, MQTTProperties *props,
                               int msgid, int dup, Clients *client) {
     Header header;

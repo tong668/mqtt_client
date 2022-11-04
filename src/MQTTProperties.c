@@ -210,35 +210,6 @@ int MQTTProperties_write(char** pptr, const MQTTProperties* properties)
     return rc;
 }
 
-void MQTTProperties_free(MQTTProperties* props)
-{
-    int i = 0;
-    if (props == NULL)
-        goto exit;
-    for (i = 0; i < props->count; ++i)
-    {
-        int id = props->array[i].identifier;
-        int type = MQTTProperty_getType(id);
-
-        switch (type)
-        {
-            case MQTTPROPERTY_TYPE_BINARY_DATA:
-            case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
-            case MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR:
-                free(props->array[i].value.data.data);
-                if (type == MQTTPROPERTY_TYPE_UTF_8_STRING_PAIR)
-                    free(props->array[i].value.value.data);
-                break;
-        }
-    }
-    if (props->array)
-        free(props->array);
-    memset(props, '\0', sizeof(MQTTProperties)); /* zero all fields */
-    exit:
-    return;
-}
-
-
 MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 {
     int i = 0;

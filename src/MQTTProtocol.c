@@ -49,7 +49,6 @@ int MQTTProtocol_assignMsgId(Clients *client) {
     return msgid;
 }
 
-
 static void MQTTProtocol_storeQoS0(Clients *pubclient, Publish *publish) {
     int len;
     pending_write *pw = NULL;
@@ -316,11 +315,6 @@ void MQTTProtocol_emptyMessageList(List *msgList) {
     ListEmpty(msgList);
 }
 
-
-/**
- * Empty and free up all storage used by a message list
- * @param msgList the message list to empty and free
- */
 void MQTTProtocol_freeMessageList(List *msgList) {
     MQTTProtocol_emptyMessageList(msgList);
     ListFree(msgList);

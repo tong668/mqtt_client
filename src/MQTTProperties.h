@@ -15,8 +15,6 @@ extern int MQTTProperties_add(MQTTProperties *props, const MQTTProperty *prop);
 
 int MQTTProperties_write(char **pptr, const MQTTProperties *properties);
 
-extern void MQTTProperties_free(MQTTProperties *properties);
-
 extern MQTTProperties MQTTProperties_copy(const MQTTProperties *props);
 
 int MQTTProperties_socketCompare(void *a, void *b);
