@@ -260,7 +260,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
         MQTTTime_sleep(100L);
     }
     Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
-    rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion, 0, 0,
+    rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion,
                               millisecsTimeout - MQTTTime_elapsed(start));
     if (rc == SOCKET_ERROR)
         goto exit;

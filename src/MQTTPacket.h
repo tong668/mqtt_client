@@ -28,9 +28,9 @@ void writeData(char **pptr, const void *data, int datalen);
 
 void *MQTTPacket_Factory(int MQTTVersion, networkHandles *net, int *error);
 
-int MQTTPacket_send(networkHandles *net, Header header, char *buffer, size_t buflen, int free, int MQTTVersion);
+int MQTTPacket_send(networkHandles *net, Header header, char *buffer, size_t buflen, int freeData);
 
-int MQTTPacket_sends(networkHandles *net, Header header, PacketBuffers *buffers, int MQTTVersion);
+int MQTTPacket_sends(networkHandles *net, Header header, PacketBuffers *bufs);
 
 void *MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
@@ -53,8 +53,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion);
 void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
 
-int MQTTPacket_send_subscribe(List *topics, List *qoss,  MQTTProperties *props,
-                              int msgid, int dup, Clients *client);
+int MQTTPacket_send_subscribe(List *topics, List *qoss, int msgid, int dup, Clients *client);
 
 void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 

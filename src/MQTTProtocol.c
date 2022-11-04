@@ -386,8 +386,7 @@ size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, 
 }
 
 
-int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket, int MQTTVersion,
-                         MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout) {
+int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket, int MQTTVersion, long timeout) {
     int rc = 0,
             port;
     size_t addr_len;
@@ -416,7 +415,7 @@ int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket
 
 int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTProperties *props) {
     int rc = 0;
-    rc = MQTTPacket_send_subscribe(topics, qoss, props, msgID, 0, client);
+    rc = MQTTPacket_send_subscribe(topics, qoss, msgID, 0, client);
     return rc;
 }
 

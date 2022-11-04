@@ -31,8 +31,8 @@ pf new_packets[] =
         };
 
 
-static char* readUTFlen(char** pptr, char* enddata, int* len);
-static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net);
+static char* readUTFlen(char** pptr, const char* enddata, int* len);
+static int MQTTPacket_send_ack(int msgid, networkHandles *net);
 
 
 void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
@@ -94,8 +94,7 @@ void* MQTTPacket_Factory(int MQTTVersion, networkHandles* net, int* error)
 }
 
 
-int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buflen, int freeData,
-                    int MQTTVersion)
+int MQTTPacket_send(networkHandles *net, Header header, char *buffer, size_t buflen, int freeData)
 {
     int rc = SOCKET_ERROR;
     size_t buf0len;
@@ -128,7 +127,7 @@ int MQTTPacket_send(networkHandles* net, Header header, char* buffer, size_t buf
     return rc;
 }
 
-int MQTTPacket_sends(networkHandles* net, Header header, PacketBuffers* bufs, int MQTTVersion)
+int MQTTPacket_sends(networkHandles *net, Header header, PacketBuffers *bufs)
 {
     int i, rc = SOCKET_ERROR;
     size_t buf0len, total = 0;
@@ -206,7 +205,7 @@ int readInt(char** pptr)
     return len;
 }
 
-static char* readUTFlen(char** pptr, char* enddata, int* len)
+static char* readUTFlen(char** pptr, const char* enddata, int* len)
 {
     char* string = NULL;
     if (enddata - (*pptr) > 1) /* enough length to read the integer? */
@@ -305,7 +304,7 @@ void MQTTPacket_freePublish(Publish* pack)
     free(pack);
 }
 
-static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, networkHandles *net)
+static int MQTTPacket_send_ack(int msgid, networkHandles *net)
 {
     Header header;
     int rc = SOCKET_ERROR;
@@ -314,10 +313,10 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
     if ((ptr = buf = malloc(2)) == NULL)
         goto exit;
     header.byte = 0;
-    header.bits.type = type;
-    header.bits.dup = dup;
+    header.bits.type = 4;
+    header.bits.dup = 0;
     writeInt(&ptr, msgid);
-    if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
+    if ((rc = MQTTPacket_send(net, header, buf, 2, 1)) != TCPSOCKET_INTERRUPTED)
         free(buf);
     exit:
     return rc;
@@ -327,7 +326,7 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
 {
     int rc = 0;
 
-    rc =  MQTTPacket_send_ack(MQTTVersion, PUBACK, msgid, 0, net);
+    rc = MQTTPacket_send_ack(msgid, net);
     Log(LOG_PROTOCOL, 12, NULL, net->socket, clientID, msgid, rc);
     return rc;
 }
@@ -389,7 +388,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
 
         ptr = topiclen;
         writeInt(&ptr, (int)lens[1]);
-        rc = MQTTPacket_sends(net, header, &packetbufs, pack->MQTTVersion);
+        rc = MQTTPacket_sends(net, header, &packetbufs);
         if (rc != TCPSOCKET_INTERRUPTED)
             free(bufs[2]);
         memcpy(pack->mask, packetbufs.mask, sizeof(pack->mask));
@@ -403,7 +402,7 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
         PacketBuffers packetbufs = {3, bufs, lens, frees, {pack->mask[0], pack->mask[1], pack->mask[2], pack->mask[3]}};
 
         writeInt(&ptr, (int)lens[1]);
-        rc = MQTTPacket_sends(net, header, &packetbufs, pack->MQTTVersion);
+        rc = MQTTPacket_sends(net, header, &packetbufs);
         memcpy(pack->mask, packetbufs.mask, sizeof(pack->mask));
     }
     if (qos == 0)
@@ -489,7 +488,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion) {
     if (client->password)
         writeData(&ptr, client->password, client->passwordlen);
 
-    rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1, MQTTVersion);
+    rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1);
     Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID,
         MQTTVersion,  rc);
     exit_nofree:
@@ -517,7 +516,7 @@ void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, siz
     return pack;
 }
 
-int MQTTPacket_send_subscribe(List *topics, List *qoss,  MQTTProperties *props,int msgid, int dup, Clients *client) {
+int MQTTPacket_send_subscribe(List *topics, List *qoss, int msgid, int dup, Clients *client) {
     Header header;
     char *data, *ptr;
     int rc = -1;
@@ -547,7 +546,7 @@ int MQTTPacket_send_subscribe(List *topics, List *qoss,  MQTTProperties *props,i
         writeChar(&ptr, subopts);
         ++i;
     }
-    rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
+    rc = MQTTPacket_send(&client->net, header, data, datalen, 1);
     Log(LOG_PROTOCOL, 22, NULL, client->net.socket, client->clientID, msgid, rc);
     if (rc != TCPSOCKET_INTERRUPTED)
         free(data);
