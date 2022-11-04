@@ -347,7 +347,7 @@ void Log(enum LOG_LEVELS log_level, int msgno, const char *format, ...) {
         va_list args;
 
         /* we're using a static character buffer, so we need to make sure only one thread uses it at a time */
-        Thread_lock_mutex(log_mutex);
+       pthread_mutex_lock(log_mutex);
         if (format == NULL && (temp = Messages_get(msgno, log_level)) != NULL)
             format = temp;
 
@@ -356,7 +356,7 @@ void Log(enum LOG_LEVELS log_level, int msgno, const char *format, ...) {
 
         Log_trace(log_level, msg_buf);
         va_end(args);
-        Thread_unlock_mutex(log_mutex);
+        pthread_mutex_unlock(log_mutex);
     }
 }
 
@@ -380,7 +380,7 @@ void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, pthread_t thread_id, i
     if (log_level < trace_settings.trace_level)
         return;
 
-    Thread_lock_mutex(log_mutex);
+    pthread_mutex_lock(log_mutex);
     cur_entry = Log_pretrace();
 
     memcpy(&(cur_entry->ts), &now_ts, sizeof(now_ts));
@@ -399,7 +399,7 @@ void Log_stackTrace(enum LOG_LEVELS log_level, int msgno, pthread_t thread_id, i
     }
 
     Log_posttrace(log_level, cur_entry);
-    Thread_unlock_mutex(log_mutex);
+    pthread_mutex_unlock(log_mutex);
 }
 
 

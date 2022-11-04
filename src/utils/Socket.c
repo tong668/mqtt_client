@@ -311,7 +311,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, pthread_mutex_t *mutex,
     int sock = 0;
     *rc = 0;
     int timeout_ms = 1000;
-    Thread_lock_mutex(mutex);
+    pthread_mutex_lock(mutex);
     if (mod_s.clientsds->count == 0)
         goto exit;
 
@@ -346,9 +346,9 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, pthread_mutex_t *mutex,
             goto exit; /* no work to do */
         }
         /* Prevent performance issue by unlocking the socket_mutex while waiting for a ready socket. */
-        Thread_unlock_mutex(mutex);
+        pthread_mutex_unlock(mutex);
         *rc = select(maxfdp1_saved, &(mod_s.rset), &pwset, NULL, &timeout_tv);
-        Thread_lock_mutex(mutex);
+        pthread_mutex_lock(mutex);
         if (*rc == SOCKET_ERROR) {
             Socket_error("read select", 0);
             goto exit;
@@ -390,7 +390,7 @@ SOCKET Socket_getReadySocket(int more_work, int timeout, pthread_mutex_t *mutex,
         ListNextElement(mod_s.clientsds, &mod_s.cur_clientsds);
     }
     exit:
-    Thread_unlock_mutex(mutex);
+    pthread_mutex_unlock(mutex);
     return sock;
 } /* end getReadySocket */
 #else
@@ -1085,9 +1085,9 @@ int Socket_continueWrites(SOCKET* sock, mutex_type mutex)
                 (*writeAvailable)(socket);
 
             if (writecomplete) {
-                Thread_unlock_mutex(mutex);
+                pthread_mutex_unlock(mutex);
                 (*writecomplete)(socket, rc);
-                Thread_lock_mutex(mutex);
+                pthread_mutex_lock(mutex);
             }
         } else
             ListNextElement(mod_s.write_pending, &curpending);

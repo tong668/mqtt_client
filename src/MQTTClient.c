@@ -94,7 +94,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connect
     int rc = MQTTCLIENT_SUCCESS;
     MQTTClients *m = handle;
 
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
 
     if (m == NULL || ma == NULL || m->c->connect_state != NOT_IN_PROGRESS)
         rc = MQTTCLIENT_FAILURE;
@@ -103,7 +103,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connect
         m->ma = ma;
         m->dc = dc;
     }
-    Thread_unlock_mutex(mqttclient_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
     return rc;
 }
 
@@ -176,16 +176,16 @@ static void *MQTTClient_run(void *n) {
     long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
     running = 1;
     Thread_getid();
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
     while (1) { //todo
         int rc = SOCKET_ERROR;
         SOCKET sock = -1;
         MQTTClients *m = NULL;
         MQTTPacket *pack = NULL;
 
-        Thread_unlock_mutex(mqttclient_mutex);
+        pthread_mutex_unlock(mqttclient_mutex);
         pack = MQTTClient_cycle(&sock, timeout, &rc);
-        Thread_lock_mutex(mqttclient_mutex);
+        pthread_mutex_lock(mqttclient_mutex);
         timeout = 100L;
 
         /* find client corresponding to socket */
@@ -207,9 +207,9 @@ static void *MQTTClient_run(void *n) {
 
             Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
                 m->c->clientID, m->c->messageQueue->count);
-            Thread_unlock_mutex(mqttclient_mutex);
+            pthread_mutex_unlock(mqttclient_mutex);
             rc = (*(m->ma))(m->context, qe->topicName, topicLen, qe->msg);
-            Thread_lock_mutex(mqttclient_mutex);
+            pthread_mutex_lock(mqttclient_mutex);
             /* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
              * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
              * so we must be careful how we use it.
@@ -271,9 +271,9 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
     }
     if (m->c->connect_state == TCP_IN_PROGRESS) /* TCP connect started - wait for completion */
     {
-        Thread_unlock_mutex(mqttclient_mutex);
+        pthread_mutex_unlock(mqttclient_mutex);
         MQTTClient_waitfor(handle, CONNECT, &rc, millisecsTimeout - MQTTTime_elapsed(start));
-        Thread_lock_mutex(mqttclient_mutex);
+        pthread_mutex_lock(mqttclient_mutex);
         if (rc != 0) {
             rc = SOCKET_ERROR;
             goto exit;
@@ -288,9 +288,9 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
     if (m->c->connect_state == WAIT_FOR_CONNACK) /* MQTT connect sent - wait for CONNACK */
     {
         MQTTPacket *pack = NULL;
-        Thread_unlock_mutex(mqttclient_mutex);
+        pthread_mutex_unlock(mqttclient_mutex);
         pack = MQTTClient_waitfor(handle, CONNACK, &rc, millisecsTimeout - MQTTTime_elapsed(start));
-        Thread_lock_mutex(mqttclient_mutex);
+        pthread_mutex_lock(mqttclient_mutex);
         if (pack == NULL)
             rc = SOCKET_ERROR;
     }
@@ -345,11 +345,11 @@ static MQTTResponse
 MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options) {
     MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;
-    Thread_lock_mutex(connect_mutex);
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(connect_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
     rc = MQTTClient_connectURI(handle, options, m->serverURI);
-    Thread_unlock_mutex(mqttclient_mutex);
-    Thread_unlock_mutex(connect_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
+    pthread_mutex_unlock(connect_mutex);
     return rc;
 }
 
@@ -361,8 +361,8 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, char *const *topic, in
     int i = 0;
     MQTTResponse resp = MQTTResponse_initializer;
     int msgid = 0;
-    Thread_lock_mutex(subscribe_mutex);
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(subscribe_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
     topics = ListInitialize();
     qoss = ListInitialize();
     for (i = 0; i < 1; i++) { //todo
@@ -373,8 +373,8 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, char *const *topic, in
     ListFreeNoContent(topics);
     ListFreeNoContent(qoss);
 
-    Thread_unlock_mutex(mqttclient_mutex);
-    Thread_unlock_mutex(subscribe_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
+    pthread_mutex_unlock(subscribe_mutex);
     return resp;
 }
 
@@ -403,7 +403,7 @@ MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, co
     Publish *p = NULL;
     int msgid = 0;
     MQTTResponse resp = MQTTResponse_initializer;
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
 
     if (qos > 0 && (msgid = MQTTProtocol_assignMsgId(m->c)) ==
                    0) {    /* this should never happen as we've waited for spaces in the queue */
@@ -442,7 +442,7 @@ MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, co
         free(p);
     }
     exit:
-    Thread_unlock_mutex(mqttclient_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
     resp.reasonCode = rc;
     return resp;
 }
@@ -473,7 +473,7 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
     *rc = rc1;
     if (*sock == 0 && timeout >= 100L && MQTTTime_elapsed(start) < (int64_t) 10)
         MQTTTime_sleep(100L);
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
     MQTTClients *m = NULL;
     if (ListFindItem(handles, sock, clientSockCompare) != NULL)
         m = (MQTTClient) (handles->current->content);
@@ -505,7 +505,7 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
         if (freed)
             pack = NULL;
     }
-    Thread_unlock_mutex(mqttclient_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
     return pack;
 }
 
@@ -567,8 +567,8 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
 
 void MQTTClient_destroy(MQTTClient *handle) {
     MQTTClients *m = *handle;
-    Thread_lock_mutex(connect_mutex);
-    Thread_lock_mutex(mqttclient_mutex);
+    pthread_mutex_lock(connect_mutex);
+    pthread_mutex_lock(mqttclient_mutex);
     if (m == NULL)
         goto exit;
     if (m->c) {
@@ -593,7 +593,7 @@ void MQTTClient_destroy(MQTTClient *handle) {
         MQTTClient_terminate();
 
     exit:
-    Thread_unlock_mutex(mqttclient_mutex);
-    Thread_unlock_mutex(connect_mutex);
+    pthread_mutex_unlock(mqttclient_mutex);
+    pthread_mutex_unlock(connect_mutex);
 }
 
