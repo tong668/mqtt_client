@@ -42,45 +42,11 @@ static int running = 0;
 static int tostop = 0;
 static pthread_t run_id = 0;
 
-
-typedef struct {
-    char *serverURI;
-    const char *currentServerURI; /* when using HA options, set the currently used serverURI */
-    int websocket;
-    Clients *c;
-    MQTTClient_connectionLost *cl;
-    MQTTClient_messageArrived *ma;
-    MQTTClient_deliveryComplete *dc;
-    void *context;
-
-    MQTTClient_disconnected *disconnected;
-    void *disconnected_context; /* the context to be associated with the disconnected callback*/
-
-    MQTTClient_published *published;
-    void *published_context; /* the context to be associated with the disconnected callback*/
-    sem_t *connect_sem;
-    int rc; /* getsockopt return code in connect */
-    sem_t *connack_sem;
-    sem_t *suback_sem;
-    sem_t *unsuback_sem;
-    MQTTPacket *pack;
-
-    unsigned long commandTimeout;
-} MQTTClients;
-
-
 static void MQTTClient_terminate(void);
-
-static void MQTTClient_emptyMessageQueue(Clients *client);
 
 static int clientSockCompare(void *a, void *b);
 
 static void *MQTTClient_run(void *n);
-
-static int MQTTClient_stop(void);
-
-
-static int MQTTClient_cleanSession(Clients *client);
 
 static MQTTResponse MQTTClient_connectURIVersion(
         MQTTClient handle, MQTTClient_connectOptions *options,
@@ -95,6 +61,9 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout);
+
+static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
+                                   MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
 int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
                                  MQTTClient_createOptions *options) {
@@ -149,7 +118,6 @@ int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *cli
 
 
 static void MQTTClient_terminate(void) {
-    MQTTClient_stop();
     if (library_initialized) {
         ListFree(bstate->clients);
         ListFree(handles);
@@ -159,23 +127,6 @@ static void MQTTClient_terminate(void) {
         library_initialized = 0;
     }
 }
-
-
-static void MQTTClient_emptyMessageQueue(Clients *client) {
-    /* empty message queue */
-    if (client->messageQueue->count > 0) {
-        ListElement *current = NULL;
-        while (ListNextElement(client->messageQueue, &current)) {
-            qEntry *qe = (qEntry *) (current->content);
-            free(qe->topicName);
-            MQTTProperties_free(&qe->msg->properties);
-            free(qe->msg->payload);
-            free(qe->msg);
-        }
-        ListEmpty(client->messageQueue);
-    }
-}
-
 
 void MQTTClient_destroy(MQTTClient *handle) {
     MQTTClients *m = *handle;
@@ -188,7 +139,6 @@ void MQTTClient_destroy(MQTTClient *handle) {
     if (m->c) {
         SOCKET saved_socket = m->c->net.socket;
         char *saved_clientid = MQTTStrdup(m->c->clientID);
-        MQTTClient_emptyMessageQueue(m->c);
         MQTTProtocol_freeClient(m->c);
         if (!ListRemove(bstate->clients, m->c))
             Log(LOG_ERROR, 0, NULL);
@@ -310,42 +260,6 @@ static void *MQTTClient_run(void *n) {
     return 0;
 }
 
-
-static int MQTTClient_stop(void) {
-    int rc = 0;
-
-    if (running == 1 && tostop == 0) {
-        int conn_count = 0;
-        ListElement *current = NULL;
-
-        if (handles != NULL) {
-            /* find out how many handles are still connected */
-            while (ListNextElement(handles, &current)) {
-                if (((MQTTClients *) (current->content))->c->connect_state > NOT_IN_PROGRESS ||
-                    ((MQTTClients *) (current->content))->c->connected)
-                    ++conn_count;
-            }
-        }
-        Log(TRACE_MIN, -1, "Conn_count is %d", conn_count);
-        /* stop the background thread, if we are the last one to be using it */
-        if (conn_count == 0) {
-            int count = 0;
-            tostop = 1;
-            if (Thread_getid() != run_id) {
-                while (running && ++count < 100) {
-                    Thread_unlock_mutex(mqttclient_mutex);
-                    Log(TRACE_MIN, -1, "sleeping");
-                    MQTTTime_sleep(100L);
-                    Thread_lock_mutex(mqttclient_mutex);
-                }
-            }
-            rc = 1;
-        }
-    }
-    return rc;
-}
-
-
 int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connectionLost *cl,
                             MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc) {
     int rc = MQTTCLIENT_SUCCESS;
@@ -363,16 +277,6 @@ int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connect
     }
 
     Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-
-static int MQTTClient_cleanSession(Clients *client) {
-    int rc = 0;
-    MQTTProtocol_emptyMessageList(client->inboundMsgs);
-    MQTTProtocol_emptyMessageList(client->outboundMsgs);
-    MQTTClient_emptyMessageQueue(client);
-    client->msgID = 0;
     return rc;
 }
 
@@ -512,8 +416,6 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
                 m->c->connect_state = NOT_IN_PROGRESS;
                 if (MQTTVersion == 4)
                     sessionPresent = connack->flags.bits.sessionPresent;
-                if (m->c->cleansession || m->c->cleanstart)
-                    rc = MQTTClient_cleanSession(m->c);
                 if (m->c->outboundMsgs->count > 0) {
                     ListElement *outcurrent = NULL;
                     struct timeval zero = {0, 0};
@@ -544,19 +446,6 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
     return resp;
 }
 
-
-static int retryLoopIntervalms = 5000;
-
-void setRetryLoopInterval(int keepalive) {
-    retryLoopIntervalms = (keepalive * 1000) / 10;
-
-    if (retryLoopIntervalms < 100)
-        retryLoopIntervalms = 100;
-    else if (retryLoopIntervalms > 5000)
-        retryLoopIntervalms = 5000;
-}
-
-
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
@@ -569,17 +458,9 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
     start = MQTTTime_start_clock();
 
     m->currentServerURI = serverURI;
-    m->c->keepAliveInterval = options->keepAliveInterval;
-    m->c->retryInterval = options->retryInterval;
-    setRetryLoopInterval(options->keepAliveInterval);
     m->c->MQTTVersion = options->MQTTVersion;
     m->c->cleanstart = m->c->cleansession = 0;
-    m->c->cleansession = options->cleansession;
     m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
-    if (options->struct_version >= 6) {
-        if (options->maxInflightMessages > 0)
-            m->c->maxInflightMessages = options->maxInflightMessages;
-    }
 
     if (m->c->username)
         free((void *) m->c->username);
@@ -608,9 +489,6 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
     return rc;
 }
 
-MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
-                                   MQTTProperties *connectProperties, MQTTProperties *willProperties);
-
 int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
     MQTTClients *m = handle;
     MQTTResponse response;
@@ -620,7 +498,7 @@ int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
     return response.reasonCode;
 }
 
-MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
+static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
                                    MQTTProperties *connectProperties, MQTTProperties *willProperties) {
     MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;

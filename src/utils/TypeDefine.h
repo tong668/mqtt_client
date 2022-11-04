@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <bits/stdint-uintn.h>
+#include <semaphore.h>
 
 #define BUILD_TIMESTAMP "2022-11-01T01:05:37Z"
 #define CLIENT_VERSION  "1.3.10"
@@ -38,12 +39,7 @@
 #define FUNC_EXIT_RC(x)
 #endif
 
-#define URI_SSL "ssl://"
-
 #define URI_TCP "tcp://"
-#define URI_WS "ws://"
-#define URI_WSS "wss://"
-
 
 #define MQTT_INVALID_PROPERTY_ID -2
 
@@ -108,25 +104,7 @@ enum msgTypes
 /** The MQTT V5 subscribe options, apart from QoS which existed before V5. */
 typedef struct MQTTSubscribe_options
 {
-//    /** The eyecatcher for this structure. Must be MQSO. */
-//    char struct_id[4];
-//    /** The version number of this structure.  Must be 0.
-//     */
-//    int struct_version;
-//    /** To not receive our own publications, set to 1.
-//     *  0 is the original MQTT behaviour - all messages matching the subscription are received.
-//     */
-//    unsigned char noLocal;
-//    /** To keep the retain flag as on the original publish message, set to 1.
-//     *  If 0, defaults to the original MQTT behaviour where the retain flag is only set on
-//     *  publications sent by a broker if in response to a subscribe request.
-//     */
-//    unsigned char retainAsPublished;
-//    /** 0 - send retained messages at the time of the subscribe (original MQTT behaviour)
-//     *  1 - send retained messages on subscribe only if the subscription is new
-//     *  2 - do not send retained messages at all
-//     */
-//    unsigned char retainHandling;
+
 } MQTTSubscribe_options;
 
 //#define MQTTSubscribe_options_initializer { {'M', 'Q', 'S', 'O'}, 0, 0, 0, 0 }
@@ -664,6 +642,33 @@ typedef struct {
 
 /** @brief raw uuid type */
 typedef unsigned char uuid_t[16];
+
+typedef struct {
+    char *serverURI;
+    const char *currentServerURI; /* when using HA options, set the currently used serverURI */
+    int websocket;
+    Clients *c;
+    MQTTClient_connectionLost *cl;
+    MQTTClient_messageArrived *ma;
+    MQTTClient_deliveryComplete *dc;
+    void *context;
+
+    MQTTClient_disconnected *disconnected;
+    void *disconnected_context; /* the context to be associated with the disconnected callback*/
+
+    MQTTClient_published *published;
+    void *published_context; /* the context to be associated with the disconnected callback*/
+    sem_t *connect_sem;
+    int rc; /* getsockopt return code in connect */
+    sem_t *connack_sem;
+    sem_t *suback_sem;
+    sem_t *unsuback_sem;
+    MQTTPacket *pack;
+
+    unsigned long commandTimeout;
+} MQTTClients;
+
+
 
 
 
