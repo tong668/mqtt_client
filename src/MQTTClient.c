@@ -410,8 +410,6 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
 
     m->currentServerURI = serverURI;
     m->c->MQTTVersion = options->MQTTVersion;
-    m->c->cleanstart = m->c->cleansession = 0;
-    m->c->maxInflightMessages = (options->reliable) ? 1 : 10;
 
     if (m->c->username)
         free((void *) m->c->username);
@@ -422,21 +420,11 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
     if (options->password) {
         m->c->password = MQTTStrdup(options->password);
         m->c->passwordlen = (int) strlen(options->password);
-    } else if (options->struct_version >= 5 && options->binarypwd.data) {
-        m->c->passwordlen = options->binarypwd.len;
-        if ((m->c->password = malloc(m->c->passwordlen)) == NULL) {
-            rc.reasonCode = PAHO_MEMORY_ERROR;
-            goto exit;
-        }
-        memcpy((void *) m->c->password, options->binarypwd.data, m->c->passwordlen);
     }
-
-    if (options->struct_version >= 3)
-        MQTTVersion = options->MQTTVersion;
+    MQTTVersion = options->MQTTVersion;
     rc = MQTTClient_connectURIVersion(handle, options, serverURI, MQTTVersion, start, millisecsTimeout,
                                       connectProperties, willProperties);
 
-    exit:
     return rc;
 }
 
@@ -624,13 +612,11 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
             /* Note that these handle... functions free the packet structure that they are dealing with */
             if (pack->header.bits.type == PUBLISH)
                 *rc = MQTTProtocol_handlePublishes(pack, *sock);
-            else if (pack->header.bits.type == PUBACK || pack->header.bits.type == PUBCOMP) {
+            else if (pack->header.bits.type == PUBACK ) {
                 int msgid;
-
-                ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp *) pack : *(Puback *) pack;
+                ack =  *(Puback *) pack;
                 msgid = ack.msgId;
-                *rc = /*(pack->header.bits.type == PUBCOMP) ?
-                      MQTTProtocol_handlePubcomps(pack, *sock) :*/ MQTTProtocol_handlePubacks(pack, *sock);
+                *rc =  MQTTProtocol_handlePubacks(pack, *sock);
                 if (m && m->dc) {
                     Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
                     (*(m->dc))(m->context, msgid);
@@ -682,13 +668,7 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
                     if ((*rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char *) &error, &len)) == 0)
                         *rc = error;
                     break;
-                } else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS && *rc != TCPSOCKET_INTERRUPTED) {
-                    *rc = 1;
-                    break;
-                } else if (m->c->connect_state == PROXY_CONNECT_IN_PROGRESS) {
-                    *rc = 1;
-                    break;
-                } else if (m->c->connect_state == WAIT_FOR_CONNACK) {
+                }  else if (m->c->connect_state == WAIT_FOR_CONNACK) {
                     int error;
                     socklen_t len = sizeof(error);
                     if (getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char *) &error, &len) == 0) {
