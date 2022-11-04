@@ -106,7 +106,6 @@ int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connect
         rc = MQTTCLIENT_FAILURE;
     else {
         m->context = context;
-//        m->cl = cl;
         m->ma = ma;
         m->dc = dc;
     }
@@ -154,7 +153,6 @@ static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverUR
     m->connect_sem = Thread_create_sem(&rc);
     m->connack_sem = Thread_create_sem(&rc);
     m->suback_sem = Thread_create_sem(&rc);
-//    m->unsuback_sem = Thread_create_sem(&rc);
 
     ListAppend(bstate->clients, m->c, sizeof(Clients) + 3 * sizeof(List));
 
@@ -610,7 +608,6 @@ void MQTTClient_destroy(MQTTClient *handle) {
     Thread_destroy_sem(m->connect_sem);
     Thread_destroy_sem(m->connack_sem);
     Thread_destroy_sem(m->suback_sem);
-//    Thread_destroy_sem(m->unsuback_sem);
     if (!ListRemove(handles, m))
         Log(LOG_ERROR, -1, "free error");
     *handle = NULL;

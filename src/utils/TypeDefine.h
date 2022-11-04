@@ -204,17 +204,6 @@ typedef struct
     u_int8_t mask[4];
 } Publications;
 
-/**
- * Client will message data
- */
-typedef struct
-{
-    char *topic;
-    int payloadlen;
-    void *payload;
-    int retained;
-    int qos;
-} willMessages;
 
 typedef struct
 {
@@ -225,22 +214,6 @@ typedef struct
 
     int MQTTVersion;
 } MQTTClient_createOptions;
-
-typedef struct
-{
-    char struct_id[4];
-    int struct_version;
-    const char* topicName;
-    const char* message;
-    int retained;
-    int qos;
-    struct
-    {
-        int len;            /**< binary payload length */
-        const void* data;  /**< binary payload data */
-    } payload;
-} MQTTClient_willOptions;
-
 
 typedef struct
 {
@@ -599,9 +572,5 @@ typedef struct {
 
     unsigned long commandTimeout;
 } MQTTClients;
-
-
-
-
 
 #endif /* _MUTEX_TYPE_H_ */
