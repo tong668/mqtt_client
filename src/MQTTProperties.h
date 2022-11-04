@@ -19,5 +19,7 @@ extern void MQTTProperties_free(MQTTProperties *properties);
 
 extern MQTTProperties MQTTProperties_copy(const MQTTProperties *props);
 
+int MQTTProperties_socketCompare(void *a, void *b);
+
 
 #endif //MQTT_CLIENT_MQTTPROPERTIES_H

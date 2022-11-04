@@ -186,7 +186,7 @@ int MQTTProtocol_handlePublishes(void *pack, SOCKET sock) {
     char *clientid = NULL;
     int rc = TCPSOCKET_COMPLETE;
     int socketHasPendingWrites = 0;
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
     clientid = client->clientID;
     Log(LOG_PROTOCOL, 11, NULL, sock, clientid, publish->msgId, publish->header.bits.qos,
         publish->header.bits.retain, publish->payloadlen, min(20, publish->payloadlen), publish->payload);
@@ -246,8 +246,8 @@ int MQTTProtocol_handlePublishes(void *pack, SOCKET sock) {
         }
         if (socketHasPendingWrites)
             rc = MQTTProtocol_queueAck(client, PUBREC, publish->msgId);
-        else
-            rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
+//        else
+//            rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
         publish->topic = NULL;
     }
     exit:
@@ -259,7 +259,7 @@ int MQTTProtocol_handlePubacks(void *pack, SOCKET sock) {
     Puback *puback = (Puback *) pack;
     Clients *client = NULL;
     int rc = TCPSOCKET_COMPLETE;
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
     Log(LOG_PROTOCOL, 14, NULL, sock, client->clientID, puback->msgId);
 
     /* look for the message by message id in the records of outbound messages for this client */
@@ -287,7 +287,7 @@ int MQTTProtocol_handlePubrecs(void *pack, SOCKET sock) {
     int rc = TCPSOCKET_COMPLETE;
     int send_pubrel = 1; /* boolean to send PUBREL or not */
 
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
     Log(LOG_PROTOCOL, 15, NULL, sock, client->clientID, pubrec->msgId);
 
     /* look for the message by message id in the records of outbound messages for this client */
@@ -310,11 +310,8 @@ int MQTTProtocol_handlePubrecs(void *pack, SOCKET sock) {
             }
         }
     }
-    if (!send_pubrel); /* only don't send ack on MQTT v5 PUBREC error, otherwise send ack under all circumstances because MQTT state can get out of step */
-    else if (!Socket_noPendingWrites(sock))
+    if (!Socket_noPendingWrites(sock))
         rc = MQTTProtocol_queueAck(client, PUBREL, pubrec->msgId);
-    else
-        rc = MQTTPacket_send_pubrel(pubrec->MQTTVersion, pubrec->msgId, 0, &client->net, client->clientID);
 
     free(pack);
     return rc;
@@ -324,7 +321,7 @@ int MQTTProtocol_handlePubrels(void *pack, SOCKET sock) {
     Pubrel *pubrel = (Pubrel *) pack;
     Clients *client = NULL;
     int rc = TCPSOCKET_COMPLETE;
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
     Log(LOG_PROTOCOL, 17, NULL, sock, client->clientID, pubrel->msgId);
 
     /* look for the message by message id in the records of inbound messages for this client */
@@ -362,8 +359,8 @@ int MQTTProtocol_handlePubrels(void *pack, SOCKET sock) {
     /* Send ack under all circumstances because MQTT state can get out of step - this standard also says to do this */
     if (!Socket_noPendingWrites(sock))
         rc = MQTTProtocol_queueAck(client, PUBCOMP, pubrel->msgId);
-    else
-        rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
+//    else
+//        rc = MQTTPacket_send_pubcomp(pubrel->MQTTVersion, pubrel->msgId, &client->net, client->clientID);
 
     free(pack);
     return rc;
@@ -373,7 +370,7 @@ int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock) {
     Pubcomp *pubcomp = (Pubcomp *) pack;
     Clients *client = NULL;
     int rc = TCPSOCKET_COMPLETE;
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
     Log(LOG_PROTOCOL, 19, NULL, sock, client->clientID, pubcomp->msgId);
 
     /* look for the message by message id in the records of outbound messages for this client */

@@ -254,3 +254,11 @@ MQTTProperties MQTTProperties_copy(const MQTTProperties* props)
 }
 
 
+int MQTTProperties_socketCompare(void* a, void* b)
+{
+    Clients* client = (Clients*)a;
+    /*printf("comparing %d with %d\n", (char*)a, (char*)b); */
+    return client->net.socket == *(SOCKET*)b;
+}
+
+

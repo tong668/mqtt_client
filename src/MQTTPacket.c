@@ -348,33 +348,6 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
     return rc;
 }
 
-
-int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
-{
-    int rc = 0;
-    rc =  MQTTPacket_send_ack(MQTTVersion, PUBREC, msgid, 0, net);
-    Log(LOG_PROTOCOL, 13, NULL, net->socket, clientID, msgid, rc);
-    return rc;
-}
-
-
-int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles* net, const char* clientID)
-{
-    int rc = 0;
-    rc = MQTTPacket_send_ack(MQTTVersion, PUBREL, msgid, dup, net);
-    Log(LOG_PROTOCOL, 16, NULL, net->socket, clientID, msgid, rc);
-    return rc;
-}
-
-
-int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
-{
-    int rc = 0;
-    rc = MQTTPacket_send_ack(MQTTVersion, PUBCOMP, msgid, 0, net);
-    Log(LOG_PROTOCOL, 18, NULL, net->socket, clientID, msgid, rc);
-    return rc;
-}
-
 void* MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
     Ack* pack = NULL;
@@ -496,13 +469,6 @@ int MQTTPacket_VBIlen(int rem_len)
     else
         rc = 4;
     return rc;
-}
-
-int clientSocketCompare(void* a, void* b)
-{
-    Clients* client = (Clients*)a;
-    /*printf("comparing %d with %d\n", (char*)a, (char*)b); */
-    return client->net.socket == *(SOCKET*)b;
 }
 
 int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
@@ -647,8 +613,7 @@ void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size
         if (newint == NULL) {
             if (pack->properties.array)
                 free(pack->properties.array);
-            if (pack)
-                free(pack);
+            free(pack);
             pack = NULL; /* signal protocol error */
             goto exit;
         }

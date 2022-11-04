@@ -44,20 +44,11 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles *net, cons
 
 void *MQTTPacket_ack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
-int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles *net, const char *clientID);
-
-int MQTTPacket_send_pubrel(int MQTTVersion, int msgid, int dup, networkHandles *net, const char *clientID);
-
-int MQTTPacket_send_pubcomp(int MQTTVersion, int msgid, networkHandles *net, const char *clientID);
-
 void writeInt4(char **pptr, int anInt);
 
 void writeMQTTLenString(char **pptr, MQTTLenString lenstring);
 
 int MQTTPacket_VBIlen(int rem_len);
-
-int clientSocketCompare(void *a, void *b); //todo 暂时放这里，将来移走
-
 
 int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
                             MQTTProperties *connectProperties, MQTTProperties *willProperties);
