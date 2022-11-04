@@ -273,40 +273,6 @@ void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data,
     return &header;
 }
 
-
-int MQTTPacket_send_disconnect(Clients* client, enum MQTTReasonCodes reason, MQTTProperties* props)
-{
-    Header header;
-    int rc = 0;
-    header.byte = 0;
-    header.bits.type = DISCONNECT;
-
-    if (client->MQTTVersion >= 5 && (props || reason != MQTTREASONCODE_SUCCESS))
-    {
-        size_t buflen = 1 + ((props == NULL) ? 0 : MQTTProperties_len(props));
-        char *buf = NULL;
-        char *ptr = NULL;
-
-        if ((buf = malloc(buflen)) == NULL)
-        {
-            rc = SOCKET_ERROR;
-            goto exit;
-        }
-        ptr = buf;
-        writeChar(&ptr, reason);
-        if (props)
-            MQTTProperties_write(&ptr, props);
-        if ((rc = MQTTPacket_send(&client->net, header, buf, buflen, 1,
-                                  client->MQTTVersion)) != TCPSOCKET_INTERRUPTED)
-            free(buf);
-    }
-    else
-        rc = MQTTPacket_send(&client->net, header, NULL, 0, 0, client->MQTTVersion);
-    exit:
-    Log(LOG_PROTOCOL, 28, NULL, client->net.socket, client->clientID, rc);
-    return rc;
-}
-
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
     Publish* pack = NULL;
@@ -381,20 +347,6 @@ int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, cons
     Log(LOG_PROTOCOL, 12, NULL, net->socket, clientID, msgid, rc);
     return rc;
 }
-
-void MQTTPacket_freeSuback(Suback* pack)
-{
-    if (pack->qoss != NULL)
-        ListFree(pack->qoss);
-    free(pack);
-}
-
-
-void MQTTPacket_freeUnsuback(Unsuback* pack)
-{
-    free(pack);
-}
-
 
 
 int MQTTPacket_send_pubrec(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
@@ -604,9 +556,6 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
     rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1, MQTTVersion);
     Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID,
         MQTTVersion, client->cleansession, rc);
-    exit:
-    if (rc != TCPSOCKET_INTERRUPTED)
-        free(buf);
     exit_nofree:
     return rc;
 }
@@ -634,17 +583,6 @@ void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, siz
 
 void MQTTPacket_freeConnack(Connack *pack) {
     free(pack);
-}
-
-
-int MQTTPacket_send_pingreq(networkHandles *net, const char *clientID) {
-    Header header;
-    int rc = 0;
-    header.byte = 0;
-    header.bits.type = PINGREQ;
-    rc = MQTTPacket_send(net, header, NULL, 0, 0, MQTTVERSION_3_1_1);
-    Log(LOG_PROTOCOL, 20, NULL, net->socket, clientID, rc);
-    return rc;
 }
 
 int MQTTPacket_send_subscribe(List *topics, List *qoss, MQTTSubscribe_options *opts, MQTTProperties *props,
