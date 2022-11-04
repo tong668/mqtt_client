@@ -53,12 +53,11 @@ static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, 
 
 static MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, char *const *topic, int *qos);
 
-static MQTTResponse
+ MQTTResponse
 MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload, int qos,
                     int retained, MQTTClient_deliveryToken *deliveryToken);
 
-static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *msg,
-                                               MQTTClient_deliveryToken *dt);
+
 
 static MQTTResponse
 MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
@@ -394,7 +393,7 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
     return response.reasonCode;
 }
 
-static MQTTResponse
+MQTTResponse
 MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload, int qos,
                     int retained, MQTTClient_deliveryToken *deliveryToken) {
     int rc = MQTTCLIENT_SUCCESS;
@@ -429,6 +428,7 @@ MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, co
         goto exit_and_free;
     }
     p->msgId = msgid;
+    printf("p->msgId  = %d\n",p->msgId);
     p->MQTTVersion = m->c->MQTTVersion;
     rc = MQTTProtocol_startPublish(m->c, p, qos, retained, &msg);
     if (deliveryToken && qos > 0)
@@ -447,7 +447,7 @@ MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, co
     return resp;
 }
 
-static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
+MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
                                                MQTTClient_deliveryToken *deliveryToken) {
     MQTTResponse rc = MQTTResponse_initializer;
     rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,

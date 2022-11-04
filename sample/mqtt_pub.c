@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "MQTTClient.h"
 
 #define ADDRESS     "tcp://192.168.101.4:1883"
@@ -11,15 +12,13 @@
 #define QOS         1
 #define TIMEOUT     10000L
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     MQTTClient client;
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
     int rc;
-    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID)) != MQTTCLIENT_SUCCESS)
-    {
+    if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID)) != MQTTCLIENT_SUCCESS) {
         printf("Failed to create client, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
@@ -27,26 +26,29 @@ int main(int argc, char* argv[])
     conn_opts.keepAliveInterval = 20;
     conn_opts.MQTTVersion = MQTTVERSION_3_1_1;
 
-    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
-    {
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
         printf("Failed to connect, return code %d\n", rc);
         exit(EXIT_FAILURE);
     }
 
     pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen = (int)strlen(PAYLOAD);
+    pubmsg.payloadlen = (int) strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
-    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
-    {
-        printf("Failed to publish message, return code %d\n", rc);
-        exit(EXIT_FAILURE);
+    int i = 5;
+    while (i--) {
+        if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS) {
+            printf("Failed to publish message, return code %d\n", rc);
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Waiting for up to %d seconds for publication of %s\n"
+               "on topic %s for client with ClientID: %s\n",
+               (int) (TIMEOUT / 1000), PAYLOAD, TOPIC, CLIENTID);
+        printf("Message with delivery token %d delivered\n", token);
+        usleep(10);
     }
 
-    printf("Waiting for up to %d seconds for publication of %s\n"
-           "on topic %s for client with ClientID: %s\n",
-           (int)(TIMEOUT/1000), PAYLOAD, TOPIC, CLIENTID);
-    printf("Message with delivery token %d delivered\n", token);
 
     MQTTClient_destroy(&client);
     return rc;

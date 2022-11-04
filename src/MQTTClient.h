@@ -25,5 +25,12 @@ extern int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos);
 
 
 extern void MQTTClient_destroy(MQTTClient *handle);
+extern MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *msg,
+                                               MQTTClient_deliveryToken *dt);
+extern MQTTResponse
+MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload, int qos,
+                    int retained, MQTTClient_deliveryToken *deliveryToken);
+
+
 
 #endif //MQTT_CLIENT_MQTTCLIENT_H
