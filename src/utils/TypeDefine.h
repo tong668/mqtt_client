@@ -398,8 +398,6 @@ typedef struct
     struct timeval lastSent;
     struct timeval lastReceived;
     struct timeval lastPing;
-    char *http_proxy;
-    char *http_proxy_auth;
     int websocket; /**< socket has been upgraded to use web sockets */
     char *websocket_key;
     const MQTTClient_nameValue* httpHeaders;
@@ -437,7 +435,7 @@ typedef struct
         unsigned char all;	/**< all connect flags */
         struct
         {
-            unsigned int reserve : 6;	/**< unused */
+            unsigned char reserve : 6;	/**< unused */
             bool password : 1; 			/**< 3.1 password */
             bool username : 1;			/**< 3.1 user name */
         } bits;
@@ -510,9 +508,7 @@ typedef struct
 } Ack;
 
 typedef Ack Puback;
-typedef Ack Pubrec;
-typedef Ack Pubrel;
-typedef Ack Pubcomp;
+
 
 /**
  * Data for a suback packet.
@@ -582,8 +578,6 @@ typedef struct
 
 #define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}
 
-typedef void MQTTClient_disconnected(void* context, MQTTProperties* properties,
-                                     enum MQTTReasonCodes reasonCode);
 
 typedef void MQTTClient_published(void* context, int dt, int packet_type, MQTTProperties* properties,
                                   enum MQTTReasonCodes reasonCode);
@@ -605,21 +599,15 @@ typedef struct {
     const char *currentServerURI; /* when using HA options, set the currently used serverURI */
     int websocket;
     Clients *c;
-//    MQTTClient_connectionLost *cl;
     MQTTClient_messageArrived *ma;
     MQTTClient_deliveryComplete *dc;
     void *context;
-
-    MQTTClient_disconnected *disconnected;
-    void *disconnected_context; /* the context to be associated with the disconnected callback*/
-
     MQTTClient_published *published;
     void *published_context; /* the context to be associated with the disconnected callback*/
     sem_t *connect_sem;
     int rc; /* getsockopt return code in connect */
     sem_t *connack_sem;
     sem_t *suback_sem;
-//    sem_t *unsuback_sem;
     MQTTPacket *pack;
 
     unsigned long commandTimeout;
