@@ -624,7 +624,7 @@ typedef struct {
     const char *currentServerURI; /* when using HA options, set the currently used serverURI */
     int websocket;
     Clients *c;
-    MQTTClient_connectionLost *cl;
+//    MQTTClient_connectionLost *cl;
     MQTTClient_messageArrived *ma;
     MQTTClient_deliveryComplete *dc;
     void *context;
@@ -638,7 +638,7 @@ typedef struct {
     int rc; /* getsockopt return code in connect */
     sem_t *connack_sem;
     sem_t *suback_sem;
-    sem_t *unsuback_sem;
+//    sem_t *unsuback_sem;
     MQTTPacket *pack;
 
     unsigned long commandTimeout;
