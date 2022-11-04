@@ -203,7 +203,7 @@ int MQTTProtocol_handlePublishes(void *pack, SOCKET sock) {
         if (socketHasPendingWrites)
             rc = MQTTProtocol_queueAck(client, PUBACK, publish->msgId);
         else
-            rc = MQTTPacket_send_puback(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
+            rc = MQTTPacket_send_puback(publish->msgId, &client->net, client->clientID);
     } else if (publish->header.bits.qos == 2) {
         /* store publication in inbound list */
         int len;

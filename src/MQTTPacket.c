@@ -322,7 +322,7 @@ static int MQTTPacket_send_ack(int msgid, networkHandles *net)
     return rc;
 }
 
-int MQTTPacket_send_puback(int MQTTVersion, int msgid, networkHandles* net, const char* clientID)
+int MQTTPacket_send_puback(int msgid, networkHandles *net, const char *clientID)
 {
     int rc = 0;
 
@@ -391,18 +391,6 @@ int MQTTPacket_send_publish(Publish* pack, int dup, int qos, int retained, netwo
         rc = MQTTPacket_sends(net, header, &packetbufs);
         if (rc != TCPSOCKET_INTERRUPTED)
             free(bufs[2]);
-        memcpy(pack->mask, packetbufs.mask, sizeof(pack->mask));
-    }
-    else
-    {
-        char* ptr = topiclen;
-        char* bufs[3] = {topiclen, pack->topic, pack->payload};
-        size_t lens[3] = {2, strlen(pack->topic), pack->payloadlen};
-        int frees[3] = {1, 0, 0};
-        PacketBuffers packetbufs = {3, bufs, lens, frees, {pack->mask[0], pack->mask[1], pack->mask[2], pack->mask[3]}};
-
-        writeInt(&ptr, (int)lens[1]);
-        rc = MQTTPacket_sends(net, header, &packetbufs);
         memcpy(pack->mask, packetbufs.mask, sizeof(pack->mask));
     }
     if (qos == 0)
