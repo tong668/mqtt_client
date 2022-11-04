@@ -477,7 +477,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
     writeChar(&ptr, (char) MQTTVersion);
 
     packet.flags.all = 0;
-    packet.flags.bits.cleanstart = client->cleansession;
+//    packet.flags.bits.cleanstart = client->cleansession;
 //    packet.flags.bits.will = (client->will) ? 1 : 0;
 //    if (packet.flags.bits.will) {
 //        packet.flags.bits.willQoS = client->will->qos;
@@ -498,7 +498,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
 
     rc = MQTTPacket_send(&client->net, packet.header, buf, len, 1, MQTTVersion);
     Log(LOG_PROTOCOL, 0, NULL, client->net.socket, client->clientID,
-        MQTTVersion, client->cleansession, rc);
+        MQTTVersion,  rc);
     exit_nofree:
     return rc;
 }
