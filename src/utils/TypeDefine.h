@@ -581,7 +581,7 @@ typedef struct
     int keepAliveInterval;          /**< the MQTT keep alive interval */
     int retryInterval;              /**< the MQTT retry interval for QoS > 0 */
     int maxInflightMessages;        /**< the max number of inflight outbound messages we allow */
-    willMessages* will;             /**< the MQTT will message, if any */
+//    willMessages* will;             /**< the MQTT will message, if any */
     List* inboundMsgs;              /**< inbound in flight messages */
     List* outboundMsgs;				/**< outbound in flight messages */
     int connect_count;              /**< the number of outbound messages on reconnect - to ensure we send them all */
@@ -594,9 +594,9 @@ typedef struct
     void* afterRead_context;        /**< context to be used with the persistence afterRead callback */
     void* context;                  /**< calling context - used when calling disconnect_internal */
     int MQTTVersion;                /**< the version of MQTT being used, 3, 4 or 5 */
-    int sessionExpiry;              /**< MQTT 5 session expiry */
-    char* httpProxy;                /**< HTTP proxy */
-    char* httpsProxy;               /**< HTTPS proxy */
+//    int sessionExpiry;              /**< MQTT 5 session expiry */
+//    char* httpProxy;                /**< HTTP proxy */
+//    char* httpsProxy;               /**< HTTPS proxy */
 } Clients;
 
 #define MQTTResponse_initializer {1, MQTTREASONCODE_SUCCESS, 0, NULL, NULL}

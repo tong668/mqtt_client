@@ -478,11 +478,11 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
 
     packet.flags.all = 0;
     packet.flags.bits.cleanstart = client->cleansession;
-    packet.flags.bits.will = (client->will) ? 1 : 0;
-    if (packet.flags.bits.will) {
-        packet.flags.bits.willQoS = client->will->qos;
-        packet.flags.bits.willRetain = client->will->retained;
-    }
+//    packet.flags.bits.will = (client->will) ? 1 : 0;
+//    if (packet.flags.bits.will) {
+//        packet.flags.bits.willQoS = client->will->qos;
+//        packet.flags.bits.willRetain = client->will->retained;
+//    }
     if (client->username)
         packet.flags.bits.username = 1;
     if (client->password)
