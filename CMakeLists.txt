@@ -23,8 +23,6 @@ add_definitions(-DNO_PERSISTENCE=1)
 add_subdirectory(src)
 add_subdirectory(sample)
 
-#正在开发的代码
-#add_subdirectory(dev)
 
 
 
