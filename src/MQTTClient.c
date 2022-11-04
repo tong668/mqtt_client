@@ -855,8 +855,8 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
 
                 ack = (pack->header.bits.type == PUBCOMP) ? *(Pubcomp *) pack : *(Puback *) pack;
                 msgid = ack.msgId;
-                *rc = (pack->header.bits.type == PUBCOMP) ?
-                      MQTTProtocol_handlePubcomps(pack, *sock) : MQTTProtocol_handlePubacks(pack, *sock);
+                *rc = /*(pack->header.bits.type == PUBCOMP) ?
+                      MQTTProtocol_handlePubcomps(pack, *sock) :*/ MQTTProtocol_handlePubacks(pack, *sock);
                 if (m && m->dc) {
                     Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
                     (*(m->dc))(m->context, msgid);

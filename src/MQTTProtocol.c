@@ -246,8 +246,6 @@ int MQTTProtocol_handlePublishes(void *pack, SOCKET sock) {
         }
         if (socketHasPendingWrites)
             rc = MQTTProtocol_queueAck(client, PUBREC, publish->msgId);
-//        else
-//            rc = MQTTPacket_send_pubrec(publish->MQTTVersion, publish->msgId, &client->net, client->clientID);
         publish->topic = NULL;
     }
     exit:
@@ -274,36 +272,6 @@ int MQTTProtocol_handlePubacks(void *pack, SOCKET sock) {
             MQTTProtocol_removePublication(m->publish);
 
             ListRemove(client->outboundMsgs, m);
-        }
-    }
-    free(pack);
-    return rc;
-}
-
-int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock) {
-    Pubcomp *pubcomp = (Pubcomp *) pack;
-    Clients *client = NULL;
-    int rc = TCPSOCKET_COMPLETE;
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, MQTTProperties_socketCompare)->content);
-    Log(LOG_PROTOCOL, 19, NULL, sock, client->clientID, pubcomp->msgId);
-
-    /* look for the message by message id in the records of outbound messages for this client */
-    if (ListFindItem(client->outboundMsgs, &(pubcomp->msgId), messageIDCompare) == NULL) {
-        if (pubcomp->header.bits.dup == 0)
-            Log(TRACE_MIN, 3, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
-    } else {
-        Messages *m = (Messages *) (client->outboundMsgs->current->content);
-        if (m->qos != 2)
-            Log(TRACE_MIN, 4, NULL, "PUBCOMP", client->clientID, pubcomp->msgId, m->qos);
-        else {
-            if (m->nextMessageType != PUBCOMP)
-                Log(TRACE_MIN, 5, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
-            else {
-                Log(TRACE_MIN, 6, NULL, "PUBCOMP", client->clientID, pubcomp->msgId);
-                MQTTProtocol_removePublication(m->publish);
-                ListRemove(client->outboundMsgs, m);
-                (++state.msgs_sent);
-            }
         }
     }
     free(pack);

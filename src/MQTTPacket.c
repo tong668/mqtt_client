@@ -26,8 +26,6 @@ pf new_packets[] =
                 MQTTPacket_suback, /**< SUBACK */
                 NULL, /**< MQTTPacket_unsubscribe*/
                 MQTTPacket_unsuback, /**< UNSUBACK */
-                MQTTPacket_header_only, /**< PINGREQ */
-                MQTTPacket_header_only, /**< PINGRESP */
                 MQTTPacket_ack,  /**< DISCONNECT */
                 MQTTPacket_ack   /**< AUTH */
         };
@@ -266,13 +264,6 @@ void writeData(char** pptr, const void* data, int datalen)
     *pptr += datalen;
 }
 
-void* MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
-{
-    static unsigned char header = 0;
-    header = aHeader;
-    return &header;
-}
-
 void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, size_t datalen)
 {
     Publish* pack = NULL;
@@ -307,11 +298,6 @@ void* MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char* data, siz
     return pack;
 }
 
-
-/**
- * Free allocated storage for a publish packet.
- * @param pack pointer to the publish packet structure
- */
 void MQTTPacket_freePublish(Publish* pack)
 {
     if (pack->topic != NULL)
@@ -479,9 +465,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
     packet.header.byte = 0;
     packet.header.bits.type = CONNECT;
 
-    len = ((MQTTVersion == 3/*MQTTVERSION_3_1*/) ? 12 : 10) + (int) strlen(client->clientID) + 2;
-    if (client->will)
-        len += (int) strlen(client->will->topic) + 2 + client->will->payloadlen + 2;
+    len = 10 + (int) strlen(client->clientID) + 2;
     if (client->username)
         len += (int) strlen(client->username) + 2;
     if (client->password)
@@ -509,11 +493,6 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
     writeChar(&ptr, packet.flags.all);
     writeInt(&ptr, client->keepAliveInterval);
     writeUTF(&ptr, client->clientID);
-    if (client->will) {
-
-        writeUTF(&ptr, client->will->topic);
-        writeData(&ptr, client->will->payload, client->will->payloadlen);
-    }
     if (client->username)
         writeUTF(&ptr, client->username);
     if (client->password)

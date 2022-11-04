@@ -32,8 +32,6 @@ int MQTTPacket_send(networkHandles *net, Header header, char *buffer, size_t buf
 
 int MQTTPacket_sends(networkHandles *net, Header header, PacketBuffers *buffers, int MQTTVersion);
 
-void *MQTTPacket_header_only(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
-
 void *MQTTPacket_publish(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
 void MQTTPacket_freePublish(Publish *pack);

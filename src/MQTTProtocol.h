@@ -25,8 +25,6 @@ int MQTTProtocol_handlePublishes(void *pack, SOCKET sock);
 
 int MQTTProtocol_handlePubacks(void *pack, SOCKET sock);
 
-int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock);
-
 void MQTTProtocol_freeClient(Clients *client);
 
 void MQTTProtocol_emptyMessageList(List *msgList);
