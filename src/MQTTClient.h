@@ -44,11 +44,6 @@ extern MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *to
                                                     MQTTClient_deliveryToken *dt);
 
 
-extern void MQTTClient_freeMessage(MQTTClient_message **msg);
-
-
-extern void MQTTClient_free(void *ptr);
-
 extern void MQTTClient_destroy(MQTTClient *handle);
 
 #endif //MQTT_CLIENT_MQTTCLIENT_H

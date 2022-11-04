@@ -213,19 +213,6 @@ void MQTTClient_destroy(MQTTClient *handle) {
     Thread_unlock_mutex(connect_mutex);
 }
 
-
-void MQTTClient_freeMessage(MQTTClient_message **message) {
-    MQTTProperties_free(&(*message)->properties);
-    free((*message)->payload);
-    free(*message);
-    *message = NULL;
-}
-
-
-void MQTTClient_free(void *memory) {
-    free(memory);
-}
-
 static int clientSockCompare(void *a, void *b) {
     MQTTClients *m = (MQTTClients *) a;
     return m->c->net.socket == *(int *) b;
