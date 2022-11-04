@@ -428,9 +428,3 @@ int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID,
     rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
     return rc;
 }
-
-int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTProperties *props) {
-    int rc = 0;
-    rc = MQTTPacket_send_unsubscribe(topics, props, msgID, 0, client);
-    return rc;
-}

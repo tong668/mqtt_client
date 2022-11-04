@@ -43,7 +43,6 @@ int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websock
 int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
                            MQTTProperties *props);
 
-int MQTTProtocol_unsubscribe(Clients *client, List *topics, int msgID, MQTTProperties *props);
 
 
 

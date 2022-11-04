@@ -32,9 +32,6 @@ static pthread_mutex_t *socket_mutex = &socket_mutex_store;
 static pthread_mutex_t subscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t *subscribe_mutex = &subscribe_mutex_store;
 
-static pthread_mutex_t unsubscribe_mutex_store = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t *unsubscribe_mutex = &unsubscribe_mutex_store;
-
 static pthread_mutex_t connect_mutex_store = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t *connect_mutex = &connect_mutex_store;
 
@@ -694,45 +691,6 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
     response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
     return response.reasonCode;
 }
-
-
-MQTTResponse MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char *const *topic, MQTTProperties *props) {
-    MQTTClients *m = handle;
-    List *topics = NULL;
-    int i = 0;
-    int rc = SOCKET_ERROR;
-    MQTTResponse resp = MQTTResponse_initializer;
-    int msgid = 0;
-    Thread_lock_mutex(unsubscribe_mutex);
-    Thread_lock_mutex(mqttclient_mutex);
-
-    resp.reasonCode = MQTTCLIENT_FAILURE;
-
-    topics = ListInitialize();
-    for (i = 0; i < count; i++)
-        ListAppend(topics, topic[i], strlen(topic[i]));
-    rc = MQTTProtocol_unsubscribe(m->c, topics, msgid, props);
-    ListFreeNoContent(topics);
-
-    Thread_unlock_mutex(mqttclient_mutex);
-    Thread_unlock_mutex(unsubscribe_mutex);
-    return resp;
-}
-
-MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char *topic, MQTTProperties *props) {
-    MQTTResponse rc;
-
-    rc = MQTTClient_unsubscribeMany5(handle, 1, (char *const *) (&topic), props);
-    return rc;
-}
-
-
-int MQTTClient_unsubscribe(MQTTClient handle, const char *topic) {
-    MQTTResponse response = MQTTClient_unsubscribe5(handle, topic, NULL);
-
-    return response.reasonCode;
-}
-
 
 MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
                                  int qos, int retained, MQTTProperties *properties,

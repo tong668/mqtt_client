@@ -32,13 +32,6 @@ extern MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, 
 extern MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
                                                    int *qos, MQTTSubscribe_options *opts, MQTTProperties *props);
 
-extern int MQTTClient_unsubscribe(MQTTClient handle, const char *topic);
-
-extern MQTTResponse MQTTClient_unsubscribe5(MQTTClient handle, const char *topic, MQTTProperties *props);
-
-extern MQTTResponse
-MQTTClient_unsubscribeMany5(MQTTClient handle, int count, char *const *topic, MQTTProperties *props);
-
 extern MQTTResponse
 MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
                     int qos, int retained, MQTTProperties *properties, MQTTClient_deliveryToken *dt);

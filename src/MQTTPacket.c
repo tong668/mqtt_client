@@ -316,8 +316,6 @@ static int MQTTPacket_send_ack(int MQTTVersion, int type, int msgid, int dup, ne
     header.byte = 0;
     header.bits.type = type;
     header.bits.dup = dup;
-    if (type == PUBREL)
-        header.bits.qos = 1;
     writeInt(&ptr, msgid);
     if ((rc = MQTTPacket_send(net, header, buf, 2, 1, MQTTVersion)) != TCPSOCKET_INTERRUPTED)
         free(buf);
@@ -608,36 +606,6 @@ void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size
     }
     exit:
     return pack;
-}
-
-int MQTTPacket_send_unsubscribe(List *topics, MQTTProperties *props, int msgid, int dup, Clients *client) {
-    Header header;
-    char *data, *ptr;
-    int rc = SOCKET_ERROR;
-    ListElement *elem = NULL;
-    int datalen;
-    header.bits.type = UNSUBSCRIBE;
-    header.bits.dup = dup;
-    header.bits.qos = 1;
-    header.bits.retain = 0;
-
-    datalen = 2 + topics->count * 2; /* utf length == 2 */
-    while (ListNextElement(topics, &elem))
-        datalen += (int) strlen((char *) (elem->content));
-    ptr = data = malloc(datalen);
-    if (ptr == NULL)
-        goto exit;
-
-    writeInt(&ptr, msgid);
-    elem = NULL;
-    while (ListNextElement(topics, &elem))
-        writeUTF(&ptr, (char *) (elem->content));
-    rc = MQTTPacket_send(&client->net, header, data, datalen, 1, client->MQTTVersion);
-    Log(LOG_PROTOCOL, 25, NULL, client->net.socket, client->clientID, msgid, rc);
-    if (rc != TCPSOCKET_INTERRUPTED)
-        free(data);
-    exit:
-    return rc;
 }
 
 void *MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen) {
