@@ -405,13 +405,11 @@ int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket
         aClient->connect_state = TCP_IN_PROGRESS; /* TCP connect called - wait for connect completion */
     else if (rc == 0) {    /* TCP connect completed. If SSL, send SSL connect */
 
-        if (rc == 0) {
-            /* Now send the MQTT connect packet */
-            if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion, connectProperties, willProperties)) == 0)
-                aClient->connect_state = WAIT_FOR_CONNACK; /* MQTT Connect sent - wait for CONNACK */
-            else
-                aClient->connect_state = NOT_IN_PROGRESS;
-        }
+        /* Now send the MQTT connect packet */
+        if ((rc = MQTTPacket_send_connect(aClient, MQTTVersion)) == 0)
+            aClient->connect_state = WAIT_FOR_CONNACK; /* MQTT Connect sent - wait for CONNACK */
+        else
+            aClient->connect_state = NOT_IN_PROGRESS;
     }
     return rc;
 }

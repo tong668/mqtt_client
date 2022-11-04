@@ -48,8 +48,7 @@ void writeMQTTLenString(char **pptr, MQTTLenString lenstring);
 
 int MQTTPacket_VBIlen(int rem_len);
 
-int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
-                            MQTTProperties *connectProperties, MQTTProperties *willProperties);
+int MQTTPacket_send_connect(Clients *client, int MQTTVersion);
 
 void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 

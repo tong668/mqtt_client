@@ -279,7 +279,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
             goto exit;
         } else {
             m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
-            if (MQTTPacket_send_connect(m->c, MQTTVersion, 0, 0) == SOCKET_ERROR) {
+            if (MQTTPacket_send_connect(m->c, MQTTVersion) == SOCKET_ERROR) {
                 rc = SOCKET_ERROR;
                 goto exit;
             }
