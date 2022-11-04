@@ -39,8 +39,6 @@ static pthread_mutex_t *connect_mutex = &connect_mutex_store;
 static volatile int library_initialized = 0;
 static List *handles = NULL;
 static int running = 0;
-static int tostop = 0;
-static pthread_t run_id = 0;
 
 static void MQTTClient_terminate(void);
 
@@ -48,36 +46,32 @@ static int clientSockCompare(void *a, void *b);
 
 _Noreturn static void *MQTTClient_run(void *n);
 
-static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                        MQTTClient_createOptions *options);
+static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId);
 
 
-static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props);
+static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos);
 
-static MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
-                                              int *qos, MQTTProperties *props);
+static MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, char *const *topic, int *qos);
 
-static MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
-                                        int qos, int retained, MQTTProperties *properties,
-                                        MQTTClient_deliveryToken *dt);
+static MQTTResponse
+MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload, int qos,
+                    int retained, MQTTClient_deliveryToken *deliveryToken);
 
 static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *msg,
                                                MQTTClient_deliveryToken *dt);
 
-static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options,
-                                                 const char *serverURI, int MQTTVersion, struct timeval start,
-                                                 uint64_t millisecsTimeout,
-                                                 MQTTProperties *connectProperties, MQTTProperties *willProperties);
+static MQTTResponse
+MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
+                             int MQTTVersion, struct timeval start, uint64_t millisecsTimeout);
 
-static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
-                                          MQTTProperties *connectProperties, MQTTProperties *willProperties);
+static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI);
 
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout);
 
-static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
-                                          MQTTProperties *connectProperties, MQTTProperties *willProperties);
+static MQTTResponse
+MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options);
 
 
 MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
@@ -113,9 +107,7 @@ int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connect
     return rc;
 }
 
-
-static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                        MQTTClient_createOptions *options) {
+static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId) {
     int rc = 0;
     MQTTClients *m = NULL;
     if (!library_initialized) {
@@ -144,7 +136,7 @@ static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverUR
     }
     memset(m->c, '\0', sizeof(Clients));
     m->c->context = m;
-    m->c->MQTTVersion = (options) ? options->MQTTVersion : MQTTVERSION_3_1_1;
+    m->c->MQTTVersion = MQTTVERSION_3_1_1;
     m->c->outboundMsgs = ListInitialize();
     m->c->inboundMsgs = ListInitialize();
     m->c->messageQueue = ListInitialize();
@@ -159,11 +151,9 @@ static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverUR
     return rc;
 }
 
-
 int MQTTClient_create(MQTTClient *handle, const char *serverURI, const char *clientId) {
-    return MQTTClient_createWithOptions(handle, serverURI, clientId, NULL);
+    return MQTTClient_createWithOptions(handle, serverURI, clientId);
 }
-
 
 static void MQTTClient_terminate(void) {
     if (library_initialized) {
@@ -185,7 +175,7 @@ static int clientSockCompare(void *a, void *b) {
 static void *MQTTClient_run(void *n) {
     long timeout = 10L; /* first time in we have a small timeout.  Gets things started more quickly */
     running = 1;
-    run_id = Thread_getid();
+    Thread_getid();
     Thread_lock_mutex(mqttclient_mutex);
     while (1) { //todo
         int rc = SOCKET_ERROR;
@@ -255,9 +245,7 @@ static void *MQTTClient_run(void *n) {
 
 static MQTTResponse
 MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
-                             int MQTTVersion,
-                             struct timeval start, uint64_t millisecsTimeout,
-                             MQTTProperties *connectProperties, MQTTProperties *willProperties) {
+                             int MQTTVersion, struct timeval start, uint64_t millisecsTimeout) {
     MQTTClients *m = handle;
     int rc = SOCKET_ERROR;
     int sessionPresent = 0;
@@ -272,7 +260,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
         MQTTTime_sleep(100L);
     }
     Log(TRACE_MIN, -1, "Connecting to serverURI %s with MQTT version %d", serverURI, MQTTVersion);
-    rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion, connectProperties, willProperties,
+    rc = MQTTProtocol_connect(serverURI, m->c, m->websocket, MQTTVersion, 0, 0,
                               millisecsTimeout - MQTTTime_elapsed(start));
     if (rc == SOCKET_ERROR)
         goto exit;
@@ -291,7 +279,7 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
             goto exit;
         } else {
             m->c->connect_state = WAIT_FOR_CONNACK; /* TCP connect completed, in which case send the MQTT connect packet */
-            if (MQTTPacket_send_connect(m->c, MQTTVersion, connectProperties, willProperties) == SOCKET_ERROR) {
+            if (MQTTPacket_send_connect(m->c, MQTTVersion, 0, 0) == SOCKET_ERROR) {
                 rc = SOCKET_ERROR;
                 goto exit;
             }
@@ -319,8 +307,8 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
     return resp;
 }
 
-static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
-                                          MQTTProperties *connectProperties, MQTTProperties *willProperties) {
+static MQTTResponse
+MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI) {
     MQTTClients *m = handle;
     struct timeval start;
     uint64_t millisecsTimeout = 30000L;
@@ -342,50 +330,46 @@ static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectO
         m->c->passwordlen = (int) strlen(options->password);
     }
     MQTTVersion = options->MQTTVersion;
-    rc = MQTTClient_connectURIVersion(handle, options, serverURI, MQTTVersion, start, millisecsTimeout,
-                                      connectProperties, willProperties);
+    rc = MQTTClient_connectURIVersion(handle, options, serverURI, MQTTVersion, start, millisecsTimeout);
 
     return rc;
 }
 
 int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *options) {
-    MQTTClients *m = handle;
     MQTTResponse response;
-    response = MQTTClient_connectAll(handle, options, NULL, NULL);
+    response = MQTTClient_connectAll(handle, options);
     return response.reasonCode;
 }
 
-static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
-                                          MQTTProperties *connectProperties, MQTTProperties *willProperties) {
+static MQTTResponse
+MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options) {
     MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;
     Thread_lock_mutex(connect_mutex);
     Thread_lock_mutex(mqttclient_mutex);
-    rc = MQTTClient_connectURI(handle, options, m->serverURI, connectProperties, willProperties);
+    rc = MQTTClient_connectURI(handle, options, m->serverURI);
     Thread_unlock_mutex(mqttclient_mutex);
     Thread_unlock_mutex(connect_mutex);
     return rc;
 }
 
 
-MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
-                                       int *qos, MQTTProperties *props) {
+MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, char *const *topic, int *qos) {
     MQTTClients *m = handle;
     List *topics = NULL;
     List *qoss = NULL;
     int i = 0;
-    int rc = MQTTCLIENT_FAILURE;
     MQTTResponse resp = MQTTResponse_initializer;
     int msgid = 0;
     Thread_lock_mutex(subscribe_mutex);
     Thread_lock_mutex(mqttclient_mutex);
     topics = ListInitialize();
     qoss = ListInitialize();
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < 1; i++) { //todo
         ListAppend(topics, topic[i], strlen(topic[i]));
         ListAppend(qoss, &qos[i], sizeof(int));
     }
-    rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, props);
+    MQTTProtocol_subscribe(m->c, topics, qoss, msgid, 0);
     ListFreeNoContent(topics);
     ListFreeNoContent(qoss);
 
@@ -394,9 +378,9 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
     return resp;
 }
 
-static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props) {
+static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos) {
     MQTTResponse rc;
-    rc = MQTTClient_subscribeMany5(handle, 1, (char *const *) (&topic), &qos, props);
+    rc = MQTTClient_subscribeMany5(handle, (char *const *) (&topic), &qos);
     if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
         rc.reasonCode = MQTT_BAD_SUBSCRIBE;
     return rc;
@@ -404,27 +388,23 @@ static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, 
 
 
 int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
-    MQTTClients *m = handle;
     MQTTResponse response = MQTTResponse_initializer;
 
-    response = MQTTClient_subscribe5(handle, topic, qos, NULL);
+    response = MQTTClient_subscribe5(handle, topic, qos);
     return response.reasonCode;
 }
 
-static MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
-                                        int qos, int retained, MQTTProperties *properties,
-                                        MQTTClient_deliveryToken *deliveryToken) {
+static MQTTResponse
+MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload, int qos,
+                    int retained, MQTTClient_deliveryToken *deliveryToken) {
     int rc = MQTTCLIENT_SUCCESS;
     MQTTClients *m = handle;
     Messages *msg = NULL;
     Publish *p = NULL;
-    int blocked = 0;
     int msgid = 0;
     MQTTResponse resp = MQTTResponse_initializer;
     Thread_lock_mutex(mqttclient_mutex);
 
-    if (blocked == 1)
-        Log(TRACE_MIN, -1, "Resuming publish now queue not full for client %s", m->c->clientID);
     if (qos > 0 && (msgid = MQTTProtocol_assignMsgId(m->c)) ==
                    0) {    /* this should never happen as we've waited for spaces in the queue */
         rc = MQTTCLIENT_MAX_MESSAGES_INFLIGHT;
@@ -470,16 +450,14 @@ static MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName
 static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
                                                MQTTClient_deliveryToken *deliveryToken) {
     MQTTResponse rc = MQTTResponse_initializer;
-    MQTTProperties *props = NULL;
     rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,
-                             message->qos, message->retained, props, deliveryToken);
+                             message->qos, message->retained, deliveryToken);
     return rc;
 }
 
 
 int MQTTClient_publishMessage(MQTTClient handle, const char *topicName, MQTTClient_message *message,
                               MQTTClient_deliveryToken *deliveryToken) {
-    MQTTClients *m = handle;
     MQTTResponse rc = MQTTResponse_initializer;
     rc = MQTTClient_publishMessage5(handle, topicName, message, deliveryToken);
     return rc.reasonCode;
