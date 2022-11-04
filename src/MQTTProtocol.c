@@ -7,8 +7,6 @@
 #include "MQTTTime.h"
 #include "Log.h"
 #include "SocketBuffer.h"
-#include "Base64.h"
-#include "WebSocket.h"
 #include "MQTTProtocol.h"
 #include "MQTTPacket.h"
 
@@ -22,8 +20,6 @@ static int MQTTProtocol_startPublishCommon(
         Publish *publish,
         int qos,
         int retained);
-
-static void MQTTProtocol_retries(struct timeval now, Clients *client, int regardless);
 
 static int MQTTProtocol_queueAck(Clients *client, int ackType, int msgId);
 
@@ -403,99 +399,6 @@ int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock) {
     return rc;
 }
 
-void MQTTProtocol_keepalive(struct timeval now) {
-    ListElement *current = NULL;
-
-    ListNextElement(bstate->clients, &current);
-    while (current) {
-        Clients *client = (Clients *) (current->content);
-        ListNextElement(bstate->clients, &current);
-
-        if (client->connected == 0 || client->keepAliveInterval == 0)
-            continue;
-
-        if (MQTTTime_difftime(now, client->net.lastSent) >= (int64_t) (client->keepAliveInterval * 1000) ||
-            MQTTTime_difftime(now, client->net.lastReceived) >= (int64_t) (client->keepAliveInterval * 1000)) {
-            if (Socket_noPendingWrites(client->net.socket)) {
-
-                client->ping_due = 0;
-                client->net.lastPing = now;
-                client->ping_outstanding = 1;
-            } else if (client->ping_due == 0) {
-                Log(TRACE_PROTOCOL, -1, "Couldn't send PINGREQ for client %s on socket %d, noting",
-                    client->clientID, client->net.socket);
-                client->ping_due = 1;
-                client->ping_due_time = now;
-            }
-        }
-    }
-}
-
-static void MQTTProtocol_retries(struct timeval now, Clients *client, int regardless) {
-    ListElement *outcurrent = NULL;
-    if (!regardless && client->retryInterval <= 0 && /* 0 or -ive retryInterval turns off retry except on reconnect */
-        client->connect_sent == client->connect_count)
-        goto exit;
-
-    if (regardless)
-        client->connect_count = client->outboundMsgs->count; /* remember the number of messages to retry on connect */
-    else if (client->connect_sent <
-             client->connect_count) /* continue a connect retry which didn't complete first time around */
-        regardless = 1;
-
-    while (client && ListNextElement(client->outboundMsgs, &outcurrent) &&
-           client->connected && client->good &&        /* client is connected and has no errors */
-           Socket_noPendingWrites(
-                   client->net.socket)) /* there aren't any previous packets still stacked up on the socket */
-    {
-        Messages *m = (Messages *) (outcurrent->content);
-        if (regardless || MQTTTime_difftime(now, m->lastTouch) > (int64_t) (max(client->retryInterval, 10) * 1000)) {
-            if (regardless)
-                ++client->connect_sent;
-            if (m->qos == 1 || (m->qos == 2 && m->nextMessageType == PUBREC)) {
-                Publish publish;
-                int rc;
-
-                Log(TRACE_MIN, 7, NULL, "PUBLISH", client->clientID, client->net.socket, m->msgid);
-                publish.msgId = m->msgid;
-                publish.topic = m->publish->topic;
-                publish.payload = m->publish->payload;
-                publish.payloadlen = m->publish->payloadlen;
-                publish.properties = m->properties;
-                publish.MQTTVersion = m->MQTTVersion;
-                memcpy(publish.mask, m->publish->mask, sizeof(publish.mask));
-                rc = MQTTPacket_send_publish(&publish, 1, m->qos, m->retain, &client->net, client->clientID);
-                memcpy(m->publish->mask, publish.mask,
-                       sizeof(m->publish->mask)); /* store websocket mask used in send */
-                if (rc == SOCKET_ERROR) {
-                    client->good = 0;
-                    Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
-                        Socket_getpeer(client->net.socket));
-//                    MQTTProtocol_closeSession(client, 1);
-                    client = NULL;
-                } else {
-                    if (m->qos == 0 && rc == TCPSOCKET_INTERRUPTED)
-                        MQTTProtocol_storeQoS0(client, &publish);
-                    m->lastTouch = MQTTTime_now();
-                }
-            } else if (m->qos && m->nextMessageType == PUBCOMP) {
-                Log(TRACE_MIN, 7, NULL, "PUBREL", client->clientID, client->net.socket, m->msgid);
-                if (MQTTPacket_send_pubrel(m->MQTTVersion, m->msgid, 0, &client->net, client->clientID) !=
-                    TCPSOCKET_COMPLETE) {
-                    client->good = 0;
-                    Log(TRACE_PROTOCOL, 29, NULL, client->clientID, client->net.socket,
-                        Socket_getpeer(client->net.socket));
-//                    MQTTProtocol_closeSession(client, 1);
-                    client = NULL;
-                } else
-                    m->lastTouch = MQTTTime_now();
-            }
-        }
-    }
-    exit:
-    return;
-}
-
 int MQTTProtocol_queueAck(Clients *client, int ackType, int msgId) {
     int rc = 0;
     AckRequest *ackReq = NULL;
@@ -510,24 +413,6 @@ int MQTTProtocol_queueAck(Clients *client, int ackType, int msgId) {
     return rc;
 }
 
-void MQTTProtocol_retry(struct timeval now, int doRetry, int regardless) {
-    ListElement *current = NULL;
-
-    ListNextElement(bstate->clients, &current);
-    /* look through the outbound message list of each client, checking to see if a retry is necessary */
-    while (current) {
-        Clients *client = (Clients *) (current->content);
-        ListNextElement(bstate->clients, &current);
-        if (client->connected == 0)
-            continue;
-
-        if (Socket_noPendingWrites(client->net.socket) == 0)
-            continue;
-        if (doRetry)
-            MQTTProtocol_retries(now, client, regardless);
-    }
-}
-
 void MQTTProtocol_freeClient(Clients *client) {
     /* free up pending message lists here, and any other allocated data */
     MQTTProtocol_freeMessageList(client->outboundMsgs);
@@ -540,13 +425,6 @@ void MQTTProtocol_freeClient(Clients *client) {
         free((void *) client->username);
     if (client->password)
         free((void *) client->password);
-//    if (client->httpProxy)
-//        free(client->httpProxy);
-//    if (client->httpsProxy)
-//        free(client->httpsProxy);
-//    if (client->net.http_proxy_auth)
-//        free(client->net.http_proxy_auth);
-    /* don't free the client structure itself... this is done elsewhere */
 }
 
 void MQTTProtocol_emptyMessageList(List *msgList) {
@@ -664,18 +542,6 @@ int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket
     }
     return rc;
 }
-
-
-int MQTTProtocol_handlePingresps(void *pack, SOCKET sock) {
-    Clients *client = NULL;
-    int rc = TCPSOCKET_COMPLETE;
-
-    client = (Clients *) (ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
-    Log(LOG_PROTOCOL, 21, NULL, sock, client->clientID);
-    client->ping_outstanding = 0;
-    return rc;
-}
-
 
 int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID,
                            MQTTSubscribe_options *opts, MQTTProperties *props) {

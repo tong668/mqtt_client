@@ -31,10 +31,6 @@ int MQTTProtocol_handlePubrels(void *pack, SOCKET sock);
 
 int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock);
 
-void MQTTProtocol_keepalive(struct timeval);
-
-void MQTTProtocol_retry(struct timeval, int, int);
-
 void MQTTProtocol_freeClient(Clients *client);
 
 void MQTTProtocol_emptyMessageList(List *msgList);
@@ -45,13 +41,10 @@ char *MQTTStrncpy(char *dest, const char *src, size_t num);
 
 char *MQTTStrdup(const char *src);
 
-//mqttprotoclout
 size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, int default_port);
 
 int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
                          MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);
-
-int MQTTProtocol_handlePingresps(void *pack, SOCKET sock);
 
 int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
                            MQTTProperties *props);

@@ -94,7 +94,6 @@ static MQTTResponse MQTTClient_connectURIVersion(
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
-static void MQTTClient_retry(void);
 
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 
@@ -539,7 +538,6 @@ MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *optio
                         Messages *m = (Messages *) (outcurrent->content);
                         memset(&m->lastTouch, '\0', sizeof(m->lastTouch));
                     }
-                    MQTTProtocol_retry(zero, 1, 1);
                     if (m->c->connected != 1)
                         rc = MQTTCLIENT_DISCONNECTED;
                 }
@@ -818,20 +816,6 @@ int MQTTClient_publishMessage(MQTTClient handle, const char *topicName, MQTTClie
     return rc.reasonCode;
 }
 
-
-static void MQTTClient_retry(void) {
-    static struct timeval last = {0, 0};
-    struct timeval now;
-    now = MQTTTime_now();
-    if (MQTTTime_difftime(now, last) >= (int64_t) (retryLoopIntervalms)) {
-        last = MQTTTime_now();
-        MQTTProtocol_keepalive(now);
-        MQTTProtocol_retry(now, 1, 0);
-    } else
-        MQTTProtocol_retry(now, 0, 0);
-}
-
-
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
     static Ack ack;
     MQTTPacket *pack = NULL;
@@ -883,15 +867,12 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
                 *rc = MQTTProtocol_handlePubrecs(pack, *sock);
             } else if (pack->header.bits.type == PUBREL)
                 *rc = MQTTProtocol_handlePubrels(pack, *sock);
-            else if (pack->header.bits.type == PINGRESP)
-                *rc = MQTTProtocol_handlePingresps(pack, *sock);
             else
                 freed = 0;
             if (freed)
                 pack = NULL;
         }
     }
-    MQTTClient_retry();
     Thread_unlock_mutex(mqttclient_mutex);
     return pack;
 }

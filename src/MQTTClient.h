@@ -5,11 +5,6 @@
 #ifndef MQTT_CLIENT_MQTTCLIENT_H
 #define MQTT_CLIENT_MQTTCLIENT_H
 
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include "utils/TypeDefine.h"
 #include "MQTTProperties.h"
@@ -62,9 +57,5 @@ extern void MQTTClient_freeMessage(MQTTClient_message **msg);
 extern void MQTTClient_free(void *ptr);
 
 extern void MQTTClient_destroy(MQTTClient *handle);
-
-#if defined(__cplusplus)
-}
-#endif
 
 #endif //MQTT_CLIENT_MQTTCLIENT_H
