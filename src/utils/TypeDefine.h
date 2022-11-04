@@ -437,21 +437,14 @@ typedef struct
         unsigned char all;	/**< all connect flags */
         struct
         {
-            int : 1;	/**< unused */
-            bool cleanstart : 1;	/**< cleansession flag */
-            bool will : 1;			/**< will flag */
-            unsigned int willQoS : 2;	/**< will QoS value */
-            bool willRetain : 1;		/**< will retain setting */
+            unsigned int reserve : 6;	/**< unused */
             bool password : 1; 			/**< 3.1 password */
             bool username : 1;			/**< 3.1 user name */
         } bits;
     } flags;	/**< connect flags byte */
 
-    char *Protocol, /**< MQTT protocol name */
-    *clientID,	/**< string client id */
-    *willTopic,	/**< will topic */
-    *willMsg;	/**< will payload */
-
+    char *Protocol; /**< MQTT protocol name */
+    char *clientID ;/**< string client id */
     int keepAliveTimer;		/**< keepalive timeout value in seconds */
     unsigned char version;	/**< MQTT version number */
 } Connect;
