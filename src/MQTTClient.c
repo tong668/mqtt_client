@@ -436,7 +436,7 @@ static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectO
 
 
 MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
-                                       int *qos, MQTTSubscribe_options *opts, MQTTProperties *props) {
+                                       int *qos, MQTTProperties *props) {
     MQTTClients *m = handle;
     List *topics = NULL;
     List *qoss = NULL;
@@ -452,7 +452,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
         ListAppend(topics, topic[i], strlen(topic[i]));
         ListAppend(qoss, &qos[i], sizeof(int));
     }
-    rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, opts, props);
+    rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, /*opts,*/ props);
     ListFreeNoContent(topics);
     ListFreeNoContent(qoss);
 
@@ -461,10 +461,9 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
     return resp;
 }
 
-MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos,
-                                   MQTTSubscribe_options *opts, MQTTProperties *props) {
+MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props) {
     MQTTResponse rc;
-    rc = MQTTClient_subscribeMany5(handle, 1, (char *const *) (&topic), &qos, opts, props);
+    rc = MQTTClient_subscribeMany5(handle, 1, (char *const *) (&topic), &qos, props);
     if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
         rc.reasonCode = MQTT_BAD_SUBSCRIBE;
     return rc;
@@ -475,7 +474,7 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
     MQTTClients *m = handle;
     MQTTResponse response = MQTTResponse_initializer;
 
-    response = MQTTClient_subscribe5(handle, topic, qos, NULL, NULL);
+    response = MQTTClient_subscribe5(handle, topic, qos, NULL);
     return response.reasonCode;
 }
 

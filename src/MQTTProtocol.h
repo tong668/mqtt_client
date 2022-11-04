@@ -40,8 +40,7 @@ size_t MQTTProtocol_addressPort(const char *uri, int *port, const char **topic, 
 int MQTTProtocol_connect(const char *ip_address, Clients *acClients, int websocket, int MQTTVersion,
                          MQTTProperties *connectProperties, MQTTProperties *willProperties, long timeout);
 
-int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTSubscribe_options *opts,
-                           MQTTProperties *props);
+int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID,MQTTProperties *props);
 
 
 

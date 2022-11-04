@@ -98,16 +98,6 @@ enum msgTypes
 };
 
 
-
-
-/** The MQTT V5 subscribe options, apart from QoS which existed before V5. */
-typedef struct MQTTSubscribe_options
-{
-
-} MQTTSubscribe_options;
-
-//#define MQTTSubscribe_options_initializer { {'M', 'Q', 'S', 'O'}, 0, 0, 0, 0 }
-
 #define MQTTCLIENT_SUCCESS 0
 
 #define MQTTCLIENT_FAILURE -1

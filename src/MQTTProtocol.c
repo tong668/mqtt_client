@@ -416,9 +416,8 @@ int MQTTProtocol_connect(const char *ip_address, Clients *aClient, int websocket
     return rc;
 }
 
-int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID,
-                           MQTTSubscribe_options *opts, MQTTProperties *props) {
+int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID, MQTTProperties *props) {
     int rc = 0;
-    rc = MQTTPacket_send_subscribe(topics, qoss, opts, props, msgID, 0, client);
+    rc = MQTTPacket_send_subscribe(topics, qoss, props, msgID, 0, client);
     return rc;
 }

@@ -26,11 +26,10 @@ extern int MQTTClient_connect(MQTTClient handle, MQTTClient_connectOptions *opti
 
 extern int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos);
 
-extern MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos,
-                                               MQTTSubscribe_options *opts, MQTTProperties *props);
+extern MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos,MQTTProperties *props);
 
 extern MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
-                                                   int *qos, MQTTSubscribe_options *opts, MQTTProperties *props);
+                                                   int *qos,  MQTTProperties *props);
 
 extern MQTTResponse
 MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,

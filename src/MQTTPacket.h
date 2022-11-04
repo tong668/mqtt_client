@@ -54,7 +54,7 @@ int MQTTPacket_send_connect(Clients *client, int MQTTVersion,
 void *MQTTPacket_connack(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
 
-int MQTTPacket_send_subscribe(List *topics, List *qoss, MQTTSubscribe_options *opts, MQTTProperties *props,
+int MQTTPacket_send_subscribe(List *topics, List *qoss,  MQTTProperties *props,
                               int msgid, int dup, Clients *client);
 
 void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
