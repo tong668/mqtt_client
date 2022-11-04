@@ -137,7 +137,6 @@ int MQTTProperties_add(MQTTProperties* props, const MQTTProperty* prop)
     return rc;
 }
 
-
 int MQTTProperty_write(char** pptr, MQTTProperty* prop)
 {
     int rc = -1,

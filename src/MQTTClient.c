@@ -46,17 +46,31 @@ static void MQTTClient_terminate(void);
 
 static int clientSockCompare(void *a, void *b);
 
-static void *MQTTClient_run(void *n);
+_Noreturn static void *MQTTClient_run(void *n);
 
-static MQTTResponse MQTTClient_connectURIVersion(
-        MQTTClient handle, MQTTClient_connectOptions *options,
-        const char *serverURI, int MQTTVersion,
-        struct timeval start, uint64_t millisecsTimeout,
-        MQTTProperties *connectProperties, MQTTProperties *willProperties);
+static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
+                                        MQTTClient_createOptions *options);
+
+
+static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props);
+
+static MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const *topic,
+                                              int *qos, MQTTProperties *props);
+
+static MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
+                                        int qos, int retained, MQTTProperties *properties,
+                                        MQTTClient_deliveryToken *dt);
+
+static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *msg,
+                                               MQTTClient_deliveryToken *dt);
+
+static MQTTResponse MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options,
+                                                 const char *serverURI, int MQTTVersion, struct timeval start,
+                                                 uint64_t millisecsTimeout,
+                                                 MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties);
-
 
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
 
@@ -65,8 +79,44 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
 static MQTTResponse MQTTClient_connectAll(MQTTClient handle, MQTTClient_connectOptions *options,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
-int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
-                                 MQTTClient_createOptions *options) {
+
+MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
+#define MAX_INFO_STRINGS 8
+    static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
+    int i = 0;
+    libinfo[i].name = "Product name";
+    libinfo[i++].value = "Eclipse Paho Synchronous MQTT C Client Library";
+    libinfo[i].name = "Version";
+    libinfo[i++].value = CLIENT_VERSION;
+    libinfo[i].name = "Build level";
+    libinfo[i++].value = BUILD_TIMESTAMP;
+    libinfo[i].name = NULL;
+    libinfo[i].value = NULL;
+    return libinfo;
+}
+
+int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connectionLost *cl,
+                            MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc) {
+    int rc = MQTTCLIENT_SUCCESS;
+    MQTTClients *m = handle;
+
+    Thread_lock_mutex(mqttclient_mutex);
+
+    if (m == NULL || ma == NULL || m->c->connect_state != NOT_IN_PROGRESS)
+        rc = MQTTCLIENT_FAILURE;
+    else {
+        m->context = context;
+        m->cl = cl;
+        m->ma = ma;
+        m->dc = dc;
+    }
+    Thread_unlock_mutex(mqttclient_mutex);
+    return rc;
+}
+
+
+static int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, const char *clientId,
+                                        MQTTClient_createOptions *options) {
     int rc = 0;
     MQTTClients *m = NULL;
     if (!library_initialized) {
@@ -128,39 +178,6 @@ static void MQTTClient_terminate(void) {
     }
 }
 
-void MQTTClient_destroy(MQTTClient *handle) {
-    MQTTClients *m = *handle;
-    Thread_lock_mutex(connect_mutex);
-    Thread_lock_mutex(mqttclient_mutex);
-    if (m == NULL)
-        goto exit;
-    if (m->c) {
-        SOCKET saved_socket = m->c->net.socket;
-        char *saved_clientid = MQTTStrdup(m->c->clientID);
-        MQTTProtocol_freeClient(m->c);
-        if (!ListRemove(bstate->clients, m->c))
-            Log(LOG_ERROR, 0, NULL);
-        else
-            Log(TRACE_MIN, 1, NULL, saved_clientid, saved_socket);
-        free(saved_clientid);
-    }
-    if (m->serverURI)
-        free(m->serverURI);
-    Thread_destroy_sem(m->connect_sem);
-    Thread_destroy_sem(m->connack_sem);
-    Thread_destroy_sem(m->suback_sem);
-    Thread_destroy_sem(m->unsuback_sem);
-    if (!ListRemove(handles, m))
-        Log(LOG_ERROR, -1, "free error");
-    *handle = NULL;
-    if (bstate->clients->count == 0)
-        MQTTClient_terminate();
-
-    exit:
-    Thread_unlock_mutex(mqttclient_mutex);
-    Thread_unlock_mutex(connect_mutex);
-}
-
 static int clientSockCompare(void *a, void *b) {
     MQTTClients *m = (MQTTClients *) a;
     return m->c->net.socket == *(int *) b;
@@ -172,7 +189,7 @@ static void *MQTTClient_run(void *n) {
     running = 1;
     run_id = Thread_getid();
     Thread_lock_mutex(mqttclient_mutex);
-    while (!tostop) {
+    while (1) { //todo
         int rc = SOCKET_ERROR;
         SOCKET sock = -1;
         MQTTClients *m = NULL;
@@ -181,8 +198,6 @@ static void *MQTTClient_run(void *n) {
         Thread_unlock_mutex(mqttclient_mutex);
         pack = MQTTClient_cycle(&sock, timeout, &rc);
         Thread_lock_mutex(mqttclient_mutex);
-        if (tostop)
-            break;
         timeout = 100L;
 
         /* find client corresponding to socket */
@@ -195,130 +210,50 @@ static void *MQTTClient_run(void *n) {
             /* assert: should not happen */
             continue;
         }
-        {
-            if (m->c->messageQueue->count > 0 && m->ma) {
-                qEntry *qe = (qEntry *) (m->c->messageQueue->first->content);
-                int topicLen = qe->topicLen;
+        if (m->c->messageQueue->count > 0 && m->ma) {
+            qEntry *qe = (qEntry *) (m->c->messageQueue->first->content);
+            int topicLen = qe->topicLen;
 
-                if (strlen(qe->topicName) == topicLen)
-                    topicLen = 0;
+            if (strlen(qe->topicName) == topicLen)
+                topicLen = 0;
 
-                Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
-                    m->c->clientID, m->c->messageQueue->count);
-                Thread_unlock_mutex(mqttclient_mutex);
-                rc = (*(m->ma))(m->context, qe->topicName, topicLen, qe->msg);
-                Thread_lock_mutex(mqttclient_mutex);
-                /* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
-                 * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
-                 * so we must be careful how we use it.
-                 */
-                if (rc) {
-                    ListRemove(m->c->messageQueue, qe);
-                } else
-                    Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
-                        m->c->clientID);
+            Log(TRACE_MIN, -1, "Calling messageArrived for client %s, queue depth %d",
+                m->c->clientID, m->c->messageQueue->count);
+            Thread_unlock_mutex(mqttclient_mutex);
+            rc = (*(m->ma))(m->context, qe->topicName, topicLen, qe->msg);
+            Thread_lock_mutex(mqttclient_mutex);
+            /* if 0 (false) is returned by the callback then it failed, so we don't remove the message from
+             * the queue, and it will be retried later.  If 1 is returned then the message data may have been freed,
+             * so we must be careful how we use it.
+             */
+            if (rc) {
+                ListRemove(m->c->messageQueue, qe);
+            } else
+                Log(TRACE_MIN, -1, "False returned from messageArrived for client %s, message remains on queue",
+                    m->c->clientID);
+        }
+        if (pack) {
+            if (pack->header.bits.type == CONNACK) {
+                Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
+                m->pack = pack;
+                Thread_post_sem(m->connack_sem);
+            } else if (pack->header.bits.type == SUBACK) {
+                Log(TRACE_MIN, -1, "Posting suback semaphore for client %s", m->c->clientID);
+                m->pack = pack;
+                Thread_post_sem(m->suback_sem);
             }
-            if (pack) {
-                if (pack->header.bits.type == CONNACK) {
-                    Log(TRACE_MIN, -1, "Posting connack semaphore for client %s", m->c->clientID);
-                    m->pack = pack;
-                    Thread_post_sem(m->connack_sem);
-                } else if (pack->header.bits.type == SUBACK) {
-                    Log(TRACE_MIN, -1, "Posting suback semaphore for client %s", m->c->clientID);
-                    m->pack = pack;
-                    Thread_post_sem(m->suback_sem);
-                } else if (pack->header.bits.type == UNSUBACK) {
-                    Log(TRACE_MIN, -1, "Posting unsuback semaphore for client %s", m->c->clientID);
-                    m->pack = pack;
-                    Thread_post_sem(m->unsuback_sem);
-                }
-            } else if (m->c->connect_state == TCP_IN_PROGRESS) {
-                int error;
-                socklen_t len = sizeof(error);
+        } else if (m->c->connect_state == TCP_IN_PROGRESS) {
+            int error;
+            socklen_t len = sizeof(error);
 
-                if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char *) &error, &len)) == 0)
-                    m->rc = error;
-                Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
-                m->c->connect_state = NOT_IN_PROGRESS;
-                Thread_post_sem(m->connect_sem);
-            } else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS) {
-                if (rc != TCPSOCKET_INTERRUPTED) {
-                    Log(TRACE_MIN, -1, "Posting websocket handshake for client %s rc %d", m->c->clientID, m->rc);
-                    m->c->connect_state = WAIT_FOR_CONNACK;
-                    Thread_post_sem(m->connect_sem);
-                }
-            }
+            if ((m->rc = getsockopt(m->c->net.socket, SOL_SOCKET, SO_ERROR, (char *) &error, &len)) == 0)
+                m->rc = error;
+            Log(TRACE_MIN, -1, "Posting connect semaphore for client %s rc %d", m->c->clientID, m->rc);
+            m->c->connect_state = NOT_IN_PROGRESS;
+            Thread_post_sem(m->connect_sem);
         }
     }
-    run_id = 0;
-    running = tostop = 0;
-    Thread_unlock_mutex(mqttclient_mutex);
-    return 0;
 }
-
-int MQTTClient_setCallbacks(MQTTClient handle, void *context, MQTTClient_connectionLost *cl,
-                            MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc) {
-    int rc = MQTTCLIENT_SUCCESS;
-    MQTTClients *m = handle;
-
-    Thread_lock_mutex(mqttclient_mutex);
-
-    if (m == NULL || ma == NULL || m->c->connect_state != NOT_IN_PROGRESS)
-        rc = MQTTCLIENT_FAILURE;
-    else {
-        m->context = context;
-        m->cl = cl;
-        m->ma = ma;
-        m->dc = dc;
-    }
-    Thread_unlock_mutex(mqttclient_mutex);
-    return rc;
-}
-
-void Protocol_processPublication(Publish *publish, Clients *client, int allocatePayload) {
-    qEntry *qe = NULL;
-    MQTTClient_message *mm = NULL;
-    MQTTClient_message initialized = MQTTClient_message_initializer;
-    qe = malloc(sizeof(qEntry));
-    if (!qe)
-        goto exit;
-    mm = malloc(sizeof(MQTTClient_message));
-    if (!mm) {
-        free(qe);
-        goto exit;
-    }
-    memcpy(mm, &initialized, sizeof(MQTTClient_message));
-
-    qe->msg = mm;
-    qe->topicName = publish->topic;
-    qe->topicLen = publish->topiclen;
-    publish->topic = NULL;
-    if (allocatePayload) {
-        mm->payload = malloc(publish->payloadlen);
-        if (mm->payload == NULL) {
-            free(mm);
-            free(qe);
-            goto exit;
-        }
-        memcpy(mm->payload, publish->payload, publish->payloadlen);
-    } else
-        mm->payload = publish->payload;
-    mm->payloadlen = publish->payloadlen;
-    mm->qos = publish->header.bits.qos;
-    mm->retained = publish->header.bits.retain;
-    if (publish->header.bits.qos == 2)
-        mm->dup = 0;  /* ensure that a QoS2 message is not passed to the application with dup = 1 */
-    else
-        mm->dup = publish->header.bits.dup;
-    mm->msgid = publish->msgId;
-
-    if (publish->MQTTVersion >= 5)
-        mm->properties = MQTTProperties_copy(&publish->properties);
-    ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName) + 1);
-    exit:
-    FUNC_EXIT;
-}
-
 
 static MQTTResponse
 MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
@@ -452,7 +387,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
         ListAppend(topics, topic[i], strlen(topic[i]));
         ListAppend(qoss, &qos[i], sizeof(int));
     }
-    rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, /*opts,*/ props);
+    rc = MQTTProtocol_subscribe(m->c, topics, qoss, msgid, props);
     ListFreeNoContent(topics);
     ListFreeNoContent(qoss);
 
@@ -461,7 +396,7 @@ MQTTResponse MQTTClient_subscribeMany5(MQTTClient handle, int count, char *const
     return resp;
 }
 
-MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props) {
+static MQTTResponse MQTTClient_subscribe5(MQTTClient handle, const char *topic, int qos, MQTTProperties *props) {
     MQTTResponse rc;
     rc = MQTTClient_subscribeMany5(handle, 1, (char *const *) (&topic), &qos, props);
     if (qos == MQTT_BAD_SUBSCRIBE) /* addition for MQTT 3.1.1 - error code from subscribe */
@@ -478,9 +413,9 @@ int MQTTClient_subscribe(MQTTClient handle, const char *topic, int qos) {
     return response.reasonCode;
 }
 
-MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
-                                 int qos, int retained, MQTTProperties *properties,
-                                 MQTTClient_deliveryToken *deliveryToken) {
+static MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int payloadlen, const void *payload,
+                                        int qos, int retained, MQTTProperties *properties,
+                                        MQTTClient_deliveryToken *deliveryToken) {
     int rc = MQTTCLIENT_SUCCESS;
     MQTTClients *m = handle;
     Messages *msg = NULL;
@@ -534,8 +469,8 @@ MQTTResponse MQTTClient_publish5(MQTTClient handle, const char *topicName, int p
     return resp;
 }
 
-MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
-                                        MQTTClient_deliveryToken *deliveryToken) {
+static MQTTResponse MQTTClient_publishMessage5(MQTTClient handle, const char *topicName, MQTTClient_message *message,
+                                               MQTTClient_deliveryToken *deliveryToken) {
     MQTTResponse rc = MQTTResponse_initializer;
     MQTTProperties *props = NULL;
     rc = MQTTClient_publish5(handle, topicName, message->payloadlen, message->payload,
@@ -567,10 +502,8 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
     if (ListFindItem(handles, sock, clientSockCompare) != NULL)
         m = (MQTTClient) (handles->current->content);
     if (m != NULL) {
-        if (m->c->connect_state == TCP_IN_PROGRESS || m->c->connect_state == SSL_IN_PROGRESS)
+        if (m->c->connect_state == TCP_IN_PROGRESS)
             *rc = 0;  /* waiting for connect state to clear */
-        else if (m->c->connect_state == WEBSOCKET_IN_PROGRESS)
-            *rc = WebSocket_upgrade(&m->c->net);
         else {
             pack = MQTTPacket_Factory(m->c->MQTTVersion, &m->c->net, rc);
             if (*rc == TCPSOCKET_INTERRUPTED)
@@ -599,7 +532,6 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
     Thread_unlock_mutex(mqttclient_mutex);
     return pack;
 }
-
 
 static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *rc, int64_t timeout) {
     MQTTPacket *pack = NULL;
@@ -657,17 +589,36 @@ static MQTTPacket *MQTTClient_waitfor(MQTTClient handle, int packet_type, int *r
     return pack;
 }
 
-MQTTClient_nameValue *MQTTClient_getVersionInfo(void) {
-#define MAX_INFO_STRINGS 8
-    static MQTTClient_nameValue libinfo[MAX_INFO_STRINGS + 1];
-    int i = 0;
-    libinfo[i].name = "Product name";
-    libinfo[i++].value = "Eclipse Paho Synchronous MQTT C Client Library";
-    libinfo[i].name = "Version";
-    libinfo[i++].value = CLIENT_VERSION;
-    libinfo[i].name = "Build level";
-    libinfo[i++].value = BUILD_TIMESTAMP;
-    libinfo[i].name = NULL;
-    libinfo[i].value = NULL;
-    return libinfo;
+void MQTTClient_destroy(MQTTClient *handle) {
+    MQTTClients *m = *handle;
+    Thread_lock_mutex(connect_mutex);
+    Thread_lock_mutex(mqttclient_mutex);
+    if (m == NULL)
+        goto exit;
+    if (m->c) {
+        SOCKET saved_socket = m->c->net.socket;
+        char *saved_clientid = MQTTStrdup(m->c->clientID);
+        MQTTProtocol_freeClient(m->c);
+        if (!ListRemove(bstate->clients, m->c))
+            Log(LOG_ERROR, 0, NULL);
+        else
+            Log(TRACE_MIN, 1, NULL, saved_clientid, saved_socket);
+        free(saved_clientid);
+    }
+    if (m->serverURI)
+        free(m->serverURI);
+    Thread_destroy_sem(m->connect_sem);
+    Thread_destroy_sem(m->connack_sem);
+    Thread_destroy_sem(m->suback_sem);
+    Thread_destroy_sem(m->unsuback_sem);
+    if (!ListRemove(handles, m))
+        Log(LOG_ERROR, -1, "free error");
+    *handle = NULL;
+    if (bstate->clients->count == 0)
+        MQTTClient_terminate();
+
+    exit:
+    Thread_unlock_mutex(mqttclient_mutex);
+    Thread_unlock_mutex(connect_mutex);
 }
+

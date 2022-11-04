@@ -421,3 +421,47 @@ int MQTTProtocol_subscribe(Clients *client, List *topics, List *qoss, int msgID,
     rc = MQTTPacket_send_subscribe(topics, qoss, props, msgID, 0, client);
     return rc;
 }
+
+void Protocol_processPublication(Publish *publish, Clients *client, int allocatePayload) {
+    qEntry *qe = NULL;
+    MQTTClient_message *mm = NULL;
+    MQTTClient_message initialized = MQTTClient_message_initializer;
+    qe = malloc(sizeof(qEntry));
+    if (!qe)
+        goto exit;
+    mm = malloc(sizeof(MQTTClient_message));
+    if (!mm) {
+        free(qe);
+        goto exit;
+    }
+    memcpy(mm, &initialized, sizeof(MQTTClient_message));
+
+    qe->msg = mm;
+    qe->topicName = publish->topic;
+    qe->topicLen = publish->topiclen;
+    publish->topic = NULL;
+    if (allocatePayload) {
+        mm->payload = malloc(publish->payloadlen);
+        if (mm->payload == NULL) {
+            free(mm);
+            free(qe);
+            goto exit;
+        }
+        memcpy(mm->payload, publish->payload, publish->payloadlen);
+    } else
+        mm->payload = publish->payload;
+    mm->payloadlen = publish->payloadlen;
+    mm->qos = publish->header.bits.qos;
+    mm->retained = publish->header.bits.retain;
+    if (publish->header.bits.qos == 2)
+        mm->dup = 0;  /* ensure that a QoS2 message is not passed to the application with dup = 1 */
+    else
+        mm->dup = publish->header.bits.dup;
+    mm->msgid = publish->msgId;
+
+    if (publish->MQTTVersion >= 5)
+        mm->properties = MQTTProperties_copy(&publish->properties);
+    ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName) + 1);
+    exit:
+    FUNC_EXIT;
+}
