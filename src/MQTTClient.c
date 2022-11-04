@@ -861,13 +861,7 @@ static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc) {
                     Log(TRACE_MIN, -1, "Calling deliveryComplete for client %s, msgid %d", m->c->clientID, msgid);
                     (*(m->dc))(m->context, msgid);
                 }
-            } else if (pack->header.bits.type == PUBREC) {
-                Pubrec *pubrec = (Pubrec *) pack;
-
-                *rc = MQTTProtocol_handlePubrecs(pack, *sock);
-            } else if (pack->header.bits.type == PUBREL)
-                *rc = MQTTProtocol_handlePubrels(pack, *sock);
-            else
+            } else
                 freed = 0;
             if (freed)
                 pack = NULL;
