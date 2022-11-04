@@ -313,10 +313,7 @@ typedef struct
     char struct_id[4];
     int struct_version;
     int keepAliveInterval;
-    int cleansession;
-
     int reliable;
-    MQTTClient_willOptions* will;
     const char* username;
     const char* password;
     int connectTimeout;
@@ -336,26 +333,16 @@ typedef struct
         const void* data;  /**< binary password data */
     } binarypwd;
     int maxInflightMessages;
-    /*
-     * MQTT V5 clean start flag.  Only clears state at the beginning of the session.
-     */
-    int cleanstart;
+
     /**
      * HTTP headers for websockets
      */
     const MQTTClient_nameValue* httpHeaders;
-    /**
-     * HTTP proxy
-     */
-    const char* httpProxy;
-    /**
-     * HTTPS proxy
-     */
-    const char* httpsProxy;
+
 } MQTTClient_connectOptions;
 
-#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
-0, NULL, MQTTVERSION_3_1_1, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
+#define MQTTClient_connectOptions_initializer { {'M', 'Q', 'T', 'C'}, 8, 60, 1, NULL,  NULL, 30, 0, NULL,\
+0, NULL, MQTTVERSION_3_1_1, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL}
 
 /** MQTT version 5.0 response information */
 typedef struct MQTTResponse
