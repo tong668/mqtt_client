@@ -31,8 +31,6 @@ int MQTTProtocol_handlePubrels(void *pack, SOCKET sock);
 
 int MQTTProtocol_handlePubcomps(void *pack, SOCKET sock);
 
-void MQTTProtocol_closeSession(Clients *c, int sendwill);
-
 void MQTTProtocol_keepalive(struct timeval);
 
 void MQTTProtocol_retry(struct timeval, int, int);

@@ -2,13 +2,11 @@
 // Created by Administrator on 2022/11/3.
 //
 
-#include <utf-8.h>
 #include <string.h>
 #include <Log.h>
 #include "Socket.h"
 #include "WebSocket.h"
 #include "MQTTTime.h"
-#include "SocketBuffer.h"
 #include "MQTTClient.h"
 #include "Thread.h"
 #include "MQTTProtocol.h"
@@ -96,11 +94,6 @@ static MQTTResponse MQTTClient_connectURIVersion(
 static MQTTResponse MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions *options, const char *serverURI,
                                           MQTTProperties *connectProperties, MQTTProperties *willProperties);
 
-static int
-MQTTClient_disconnect1(MQTTClient handle, int timeout, int internal, int stop, enum MQTTReasonCodes, MQTTProperties *);
-
-static int MQTTClient_disconnect_internal(MQTTClient handle, int timeout);
-
 static void MQTTClient_retry(void);
 
 static MQTTPacket *MQTTClient_cycle(SOCKET *sock, uint64_t timeout, int *rc);
@@ -111,14 +104,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
                                  MQTTClient_createOptions *options) {
     int rc = 0;
     MQTTClients *m = NULL;
-    if ((rc = Thread_lock_mutex(mqttclient_mutex)) != 0)
-        goto exit;
-
-    if (serverURI == NULL || clientId == NULL) {
-        rc = MQTTCLIENT_NULL_PARAMETER;
-        goto exit;
-    }
-
     if (!library_initialized) {
         Log_initialize((Log_nameValue *) MQTTClient_getVersionInfo());
         bstate->clients = ListInitialize();
@@ -129,7 +114,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
 
     if ((m = malloc(sizeof(MQTTClients))) == NULL) {
         rc = PAHO_MEMORY_ERROR;
-        goto exit;
     }
     *handle = m;
     memset(m, '\0', sizeof(MQTTClients));
@@ -143,7 +127,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
     if ((m->c = malloc(sizeof(Clients))) == NULL) {
         ListRemove(handles, m);
         rc = PAHO_MEMORY_ERROR;
-        goto exit;
     }
     memset(m->c, '\0', sizeof(Clients));
     m->c->context = m;
@@ -160,8 +143,6 @@ int MQTTClient_createWithOptions(MQTTClient *handle, const char *serverURI, cons
 
     ListAppend(bstate->clients, m->c, sizeof(Clients) + 3 * sizeof(List));
 
-    exit:
-    Thread_unlock_mutex(mqttclient_mutex);
     return rc;
 }
 
