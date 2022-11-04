@@ -25,7 +25,7 @@ pf new_packets[] =
                 NULL, /**< MQTTPacket_subscribe*/
                 MQTTPacket_suback, /**< SUBACK */
                 NULL, /**< MQTTPacket_unsubscribe*/
-                MQTTPacket_unsuback, /**< UNSUBACK */
+//                MQTTPacket_unsuback, /**< UNSUBACK */
                 MQTTPacket_ack,  /**< DISCONNECT */
                 MQTTPacket_ack   /**< AUTH */
         };
@@ -604,27 +604,6 @@ void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size
         free(pack);
         pack = NULL;
     }
-    exit:
-    return pack;
-}
-
-void *MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen) {
-    Unsuback *pack = NULL;
-    char *curdata = data;
-    char *enddata = &data[datalen];
-    if ((pack = malloc(sizeof(Unsuback))) == NULL)
-        goto exit;
-    pack->MQTTVersion = MQTTVersion;
-    pack->header.byte = aHeader;
-    if (enddata - curdata < 2)  /* Is there enough data? */
-    {
-        free(pack);
-        pack = NULL;
-        goto exit;
-    }
-    pack->msgId = readInt(&curdata);
-    pack->reasonCodes = NULL;
-
     exit:
     return pack;
 }

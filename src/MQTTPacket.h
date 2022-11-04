@@ -60,6 +60,5 @@ int MQTTPacket_send_subscribe(List *topics, List *qoss, MQTTSubscribe_options *o
 
 void *MQTTPacket_suback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
-void *MQTTPacket_unsuback(int MQTTVersion, unsigned char aHeader, char *data, size_t datalen);
 
 #endif //MQTT_CLIENT_MQTTPACKET_H
